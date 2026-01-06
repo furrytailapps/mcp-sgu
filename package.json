@@ -1,0 +1,51 @@
+{
+  "name": "sgu-mcp",
+  "version": "1.0.0",
+  "description": "MCP server wrapping SGU (Sveriges Geologiska Undersökning) APIs for geological data in Sweden",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/furrytailapps/sgu-mcp.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "sgu",
+    "geology",
+    "sweden",
+    "bedrock",
+    "soil",
+    "infrastructure"
+  ],
+  "author": "Yesper",
+  "bugs": {
+    "url": "https://github.com/furrytailapps/sgu-mcp/issues"
+  },
+  "homepage": "https://github.com/furrytailapps/sgu-mcp",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "prettier": "prettier --check .",
+    "prettier:fix": "prettier --write ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "mcp-handler": "^1.0.5",
+    "next": "^14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.2.0",
+    "prettier": "^3.7.4",
+    "typescript": "^5.0.0"
+  }
+}
