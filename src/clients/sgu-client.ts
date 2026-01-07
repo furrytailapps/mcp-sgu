@@ -20,6 +20,7 @@ const SGU_OGC_BEDROCK_URL = 'https://api.sgu.se/oppnadata/berggrund50k-250k/ogc/
 // WMS GetMap endpoints (different from GetCapabilities endpoints)
 const SGU_WMS_BEDROCK_URL = 'https://maps3.sgu.se/geoserver/berg/ows';
 const SGU_WMS_SOIL_TYPES_URL = 'https://maps3.sgu.se/geoserver/jord/ows';
+const SGU_WMS_GROUNDWATER_URL = 'https://maps3.sgu.se/geoserver/ows';
 
 // ============================================================================
 // Client instances
@@ -40,6 +41,11 @@ const soilTypesWmsClient = createWmsClient({
   timeout: 30000,
 });
 
+const groundwaterWmsClient = createWmsClient({
+  baseUrl: SGU_WMS_GROUNDWATER_URL,
+  timeout: 30000,
+});
+
 // ============================================================================
 // WMS Layers (INSPIRE-style layer names)
 // ============================================================================
@@ -48,6 +54,8 @@ const BEDROCK_LAYERS = ['SE.GOV.SGU.BERG.GEOLOGISK_ENHET.YTA.50K'];
 const SOIL_TYPES_LAYERS = ['SE.GOV.SGU.JORD.GRUNDLAGER.25K'];
 const BOULDER_COVERAGE_LAYERS = ['SE.GOV.SGU.JORD.BLOCKIGHET.25K'];
 const SOIL_DEPTH_LAYERS = ['SE.GOV.SGU.JORD.JORDDJUP.50K'];
+const GROUNDWATER_LAYERS = ['SE.GOV.SGU.HMAG.GRUNDVATTENMAGASIN_J1.V2'];
+const LANDSLIDE_LAYERS = ['SE.GOV.SGU.JORD.SKRED'];
 
 // ============================================================================
 // Cached legend URLs (static, only depend on layer name)
@@ -58,7 +66,32 @@ const LEGEND_URLS = {
   soilTypes: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${SOIL_TYPES_LAYERS[0]}&FORMAT=image%2Fpng`,
   boulderCoverage: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${BOULDER_COVERAGE_LAYERS[0]}&FORMAT=image%2Fpng`,
   soilDepth: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${SOIL_DEPTH_LAYERS[0]}&FORMAT=image%2Fpng`,
+  groundwater: `${SGU_WMS_GROUNDWATER_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${GROUNDWATER_LAYERS[0]}&FORMAT=image%2Fpng`,
+  landslide: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${LANDSLIDE_LAYERS[0]}&FORMAT=image%2Fpng`,
 } as const;
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Build a MapResponse object
+ * Reduces duplication across all map URL methods
+ */
+function buildMapResponse(mapUrl: string, legendUrl: string, bbox: BoundingBox, layers: string[]): MapResponse {
+  return {
+    map_url: mapUrl,
+    legend_url: legendUrl,
+    bbox: {
+      minX: bbox.minX,
+      minY: bbox.minY,
+      maxX: bbox.maxX,
+      maxY: bbox.maxY,
+    },
+    coordinate_system: 'EPSG:3006',
+    layers,
+  };
+}
 
 // ============================================================================
 // SGU Client API
@@ -131,18 +164,7 @@ export const sguClient = {
       format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
     });
 
-    return {
-      map_url: mapUrl,
-      legend_url: LEGEND_URLS.bedrock, // Use cached legend URL
-      bbox: {
-        minX: bbox.minX,
-        minY: bbox.minY,
-        maxX: bbox.maxX,
-        maxY: bbox.maxY,
-      },
-      coordinate_system: 'EPSG:3006',
-      layers: BEDROCK_LAYERS,
-    };
+    return buildMapResponse(mapUrl, LEGEND_URLS.bedrock, bbox, BEDROCK_LAYERS);
   },
 
   /**
@@ -159,18 +181,7 @@ export const sguClient = {
       format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
     });
 
-    return {
-      map_url: mapUrl,
-      legend_url: LEGEND_URLS.soilTypes, // Use cached legend URL
-      bbox: {
-        minX: bbox.minX,
-        minY: bbox.minY,
-        maxX: bbox.maxX,
-        maxY: bbox.maxY,
-      },
-      coordinate_system: 'EPSG:3006',
-      layers: SOIL_TYPES_LAYERS,
-    };
+    return buildMapResponse(mapUrl, LEGEND_URLS.soilTypes, bbox, SOIL_TYPES_LAYERS);
   },
 
   /**
@@ -188,18 +199,7 @@ export const sguClient = {
       format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
     });
 
-    return {
-      map_url: mapUrl,
-      legend_url: LEGEND_URLS.boulderCoverage,
-      bbox: {
-        minX: bbox.minX,
-        minY: bbox.minY,
-        maxX: bbox.maxX,
-        maxY: bbox.maxY,
-      },
-      coordinate_system: 'EPSG:3006',
-      layers: BOULDER_COVERAGE_LAYERS,
-    };
+    return buildMapResponse(mapUrl, LEGEND_URLS.boulderCoverage, bbox, BOULDER_COVERAGE_LAYERS);
   },
 
   /**
@@ -217,18 +217,7 @@ export const sguClient = {
       format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
     });
 
-    return {
-      map_url: mapUrl,
-      legend_url: LEGEND_URLS.soilDepth,
-      bbox: {
-        minX: bbox.minX,
-        minY: bbox.minY,
-        maxX: bbox.maxX,
-        maxY: bbox.maxY,
-      },
-      coordinate_system: 'EPSG:3006',
-      layers: SOIL_DEPTH_LAYERS,
-    };
+    return buildMapResponse(mapUrl, LEGEND_URLS.soilDepth, bbox, SOIL_DEPTH_LAYERS);
   },
 
   /**
@@ -262,5 +251,41 @@ export const sguClient = {
     });
 
     return transformSoilTypeInfo(response);
+  },
+
+  /**
+   * Get a groundwater aquifers map URL for a bounding box
+   * Shows groundwater reservoirs/aquifers in soil layers (J1)
+   */
+  getGroundwaterMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
+    const { width = 800, height = 600, format = 'png' } = options;
+
+    const mapUrl = groundwaterWmsClient.getMapUrl({
+      layers: GROUNDWATER_LAYERS,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+
+    return buildMapResponse(mapUrl, LEGEND_URLS.groundwater, bbox, GROUNDWATER_LAYERS);
+  },
+
+  /**
+   * Get a landslide map URL for a bounding box
+   * Shows historical landslide areas
+   */
+  getLandslideMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
+    const { width = 800, height = 600, format = 'png' } = options;
+
+    const mapUrl = soilTypesWmsClient.getMapUrl({
+      layers: LANDSLIDE_LAYERS,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+
+    return buildMapResponse(mapUrl, LEGEND_URLS.landslide, bbox, LANDSLIDE_LAYERS);
   },
 };
