@@ -3,6 +3,8 @@ import { getBedrockTool, getBedrockHandler } from './get-bedrock';
 import { getBedrockMapTool, getBedrockMapHandler } from './get-bedrock-map';
 import { getSoilTypesMapTool, getSoilTypesMapHandler } from './get-soil-types-map';
 import { getSoilTypeAtPointTool, getSoilTypeAtPointHandler } from './get-soil-type-at-point';
+import { getBoulderCoverageMapTool, getBoulderCoverageMapHandler } from './get-boulder-coverage-map';
+import { getSoilDepthMapTool, getSoilDepthMapHandler } from './get-soil-depth-map';
 
 // Tool registry: all tools must be added here
 const tools = [
@@ -10,6 +12,8 @@ const tools = [
   { definition: getBedrockMapTool, handler: getBedrockMapHandler },
   { definition: getSoilTypesMapTool, handler: getSoilTypesMapHandler },
   { definition: getSoilTypeAtPointTool, handler: getSoilTypeAtPointHandler },
+  { definition: getBoulderCoverageMapTool, handler: getBoulderCoverageMapHandler },
+  { definition: getSoilDepthMapTool, handler: getSoilDepthMapHandler },
 ];
 
 /**

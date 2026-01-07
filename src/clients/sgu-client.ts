@@ -1,6 +1,6 @@
 import { createOgcClient } from '@/lib/ogc-client';
 import { createWmsClient } from '@/lib/wms-client';
-import { BoundingBox, Point, bboxCenter, bboxDimensions } from '@/lib/geometry-utils';
+import { BoundingBox, Point, Corridor, corridorToWktPolygon, corridorToBoundingBox } from '@/lib/geometry-utils';
 import {
   SguBedrockFeature,
   BedrockFeature,
@@ -41,11 +41,24 @@ const soilTypesWmsClient = createWmsClient({
 });
 
 // ============================================================================
-// Default layers for WMS (INSPIRE-style layer names)
+// WMS Layers (INSPIRE-style layer names)
 // ============================================================================
 
 const BEDROCK_LAYERS = ['SE.GOV.SGU.BERG.GEOLOGISK_ENHET.YTA.50K'];
 const SOIL_TYPES_LAYERS = ['SE.GOV.SGU.JORD.GRUNDLAGER.25K'];
+const BOULDER_COVERAGE_LAYERS = ['SE.GOV.SGU.JORD.BLOCKIGHET.25K'];
+const SOIL_DEPTH_LAYERS = ['SE.GOV.SGU.JORD.JORDDJUP.50K'];
+
+// ============================================================================
+// Cached legend URLs (static, only depend on layer name)
+// ============================================================================
+
+const LEGEND_URLS = {
+  bedrock: `${SGU_WMS_BEDROCK_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${BEDROCK_LAYERS[0]}&FORMAT=image%2Fpng`,
+  soilTypes: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${SOIL_TYPES_LAYERS[0]}&FORMAT=image%2Fpng`,
+  boulderCoverage: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${BOULDER_COVERAGE_LAYERS[0]}&FORMAT=image%2Fpng`,
+  soilDepth: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${SOIL_DEPTH_LAYERS[0]}&FORMAT=image%2Fpng`,
+} as const;
 
 // ============================================================================
 // SGU Client API
@@ -53,15 +66,55 @@ const SOIL_TYPES_LAYERS = ['SE.GOV.SGU.JORD.GRUNDLAGER.25K'];
 
 export const sguClient = {
   /**
-   * Get bedrock features within a bounding box
+   * Get bedrock features within a bounding box or corridor
    * Uses the 'geologisk-enhet-yta' collection (geological unit areas)
+   *
+   * When corridor is provided, uses polygon intersection filter for precise filtering.
+   * Falls back to bbox if corridor not provided.
    */
-  async getBedrock(bbox: BoundingBox, limit: number = 100): Promise<BedrockFeature[]> {
-    const features = await bedrockOgcClient.getItems<SguBedrockFeature>('geologisk-enhet-yta', {
-      bbox,
-      limit,
-    });
-    return features.map(transformBedrockFeature);
+  async getBedrock(
+    bbox: BoundingBox,
+    limit: number = 100,
+    corridor?: Corridor,
+  ): Promise<{ features: BedrockFeature[]; usedPolygonFilter: boolean }> {
+    let polygonWkt: string | undefined;
+    let usedPolygonFilter = false;
+
+    // If corridor is provided, try polygon filtering first
+    if (corridor) {
+      try {
+        polygonWkt = corridorToWktPolygon(corridor);
+        usedPolygonFilter = true;
+      } catch {
+        // Fall back to bbox if polygon generation fails
+        polygonWkt = undefined;
+      }
+    }
+
+    try {
+      const features = await bedrockOgcClient.getItems<SguBedrockFeature>('geologisk-enhet-yta', {
+        bbox: usedPolygonFilter ? undefined : bbox,
+        polygonWkt,
+        limit,
+      });
+      return {
+        features: features.map(transformBedrockFeature),
+        usedPolygonFilter,
+      };
+    } catch {
+      // If polygon filter fails (API might not support it), fall back to bbox
+      if (usedPolygonFilter) {
+        const features = await bedrockOgcClient.getItems<SguBedrockFeature>('geologisk-enhet-yta', {
+          bbox,
+          limit,
+        });
+        return {
+          features: features.map(transformBedrockFeature),
+          usedPolygonFilter: false,
+        };
+      }
+      throw new Error('Failed to fetch bedrock data');
+    }
   },
 
   /**
@@ -78,11 +131,9 @@ export const sguClient = {
       format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
     });
 
-    const legendUrl = bedrockWmsClient.getLegendUrl(BEDROCK_LAYERS[0]);
-
     return {
       map_url: mapUrl,
-      legend_url: legendUrl,
+      legend_url: LEGEND_URLS.bedrock, // Use cached legend URL
       bbox: {
         minX: bbox.minX,
         minY: bbox.minY,
@@ -108,11 +159,9 @@ export const sguClient = {
       format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
     });
 
-    const legendUrl = soilTypesWmsClient.getLegendUrl(SOIL_TYPES_LAYERS[0]);
-
     return {
       map_url: mapUrl,
-      legend_url: legendUrl,
+      legend_url: LEGEND_URLS.soilTypes, // Use cached legend URL
       bbox: {
         minX: bbox.minX,
         minY: bbox.minY,
@@ -121,6 +170,64 @@ export const sguClient = {
       },
       coordinate_system: 'EPSG:3006',
       layers: SOIL_TYPES_LAYERS,
+    };
+  },
+
+  /**
+   * Get a boulder coverage map URL for a bounding box
+   * Shows blockiness/boulder density in the soil
+   */
+  getBoulderCoverageMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
+    const { width = 800, height = 600, format = 'png' } = options;
+
+    const mapUrl = soilTypesWmsClient.getMapUrl({
+      layers: BOULDER_COVERAGE_LAYERS,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+
+    return {
+      map_url: mapUrl,
+      legend_url: LEGEND_URLS.boulderCoverage,
+      bbox: {
+        minX: bbox.minX,
+        minY: bbox.minY,
+        maxX: bbox.maxX,
+        maxY: bbox.maxY,
+      },
+      coordinate_system: 'EPSG:3006',
+      layers: BOULDER_COVERAGE_LAYERS,
+    };
+  },
+
+  /**
+   * Get a soil depth map URL for a bounding box
+   * Shows estimated depth to bedrock
+   */
+  getSoilDepthMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
+    const { width = 800, height = 600, format = 'png' } = options;
+
+    const mapUrl = soilTypesWmsClient.getMapUrl({
+      layers: SOIL_DEPTH_LAYERS,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+
+    return {
+      map_url: mapUrl,
+      legend_url: LEGEND_URLS.soilDepth,
+      bbox: {
+        minX: bbox.minX,
+        minY: bbox.minY,
+        maxX: bbox.maxX,
+        maxY: bbox.maxY,
+      },
+      coordinate_system: 'EPSG:3006',
+      layers: SOIL_DEPTH_LAYERS,
     };
   },
 

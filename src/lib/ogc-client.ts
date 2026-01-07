@@ -20,6 +20,8 @@ interface OgcClientConfig {
 
 interface QueryOptions {
   bbox?: BoundingBox;
+  /** WKT polygon for spatial filtering (alternative to bbox) */
+  polygonWkt?: string;
   limit?: number;
   offset?: number;
   crs?: string;
@@ -38,10 +40,11 @@ export function createOgcClient(config: OgcClientConfig) {
   });
 
   /**
-   * Get items from a collection with optional bbox filter
+   * Get items from a collection with optional spatial filter
+   * Supports bbox or polygon WKT filter (polygon takes precedence)
    */
   async function getItems<T>(collection: string, options: QueryOptions = {}): Promise<T[]> {
-    const { bbox, limit = 100, offset, crs = CRS_SWEREF99TM } = options;
+    const { bbox, polygonWkt, limit = 100, offset, crs = CRS_SWEREF99TM } = options;
 
     const params: Record<string, string | number | undefined> = {
       limit,
@@ -51,7 +54,13 @@ export function createOgcClient(config: OgcClientConfig) {
       'bbox-crs': crs,
     };
 
-    if (bbox) {
+    // Polygon filter takes precedence over bbox
+    if (polygonWkt) {
+      // Use CQL filter for polygon intersection
+      params.filter = `INTERSECTS(geom,${polygonWkt})`;
+      params['filter-lang'] = 'cql-text';
+      params['filter-crs'] = crs;
+    } else if (bbox) {
       params.bbox = bboxToString(bbox);
     }
 

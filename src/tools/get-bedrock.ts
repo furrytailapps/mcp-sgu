@@ -72,15 +72,20 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
     throw new ValidationError('Either bbox or corridor must be provided');
   }
 
-  // Determine the bounding box to use
+  // Build corridor object if provided
+  const corridor = args.corridor
+    ? {
+        coordinates: args.corridor.coordinates,
+        bufferMeters: args.corridor.bufferMeters ?? 500,
+      }
+    : undefined;
+
+  // Determine the bounding box to use (always needed as fallback)
   let bbox: BoundingBox;
   let queryType: 'bbox' | 'corridor';
 
-  if (args.corridor) {
-    bbox = corridorToBoundingBox({
-      coordinates: args.corridor.coordinates,
-      bufferMeters: args.corridor.bufferMeters ?? 500,
-    });
+  if (corridor) {
+    bbox = corridorToBoundingBox(corridor);
     queryType = 'corridor';
   } else {
     bbox = args.bbox as BoundingBox;
@@ -90,8 +95,8 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
   // Validate the bounding box
   validateBbox(bbox);
 
-  // Fetch bedrock data
-  const features = await sguClient.getBedrock(bbox, args.limit ?? 100);
+  // Fetch bedrock data - pass corridor for polygon filtering when available
+  const result = await sguClient.getBedrock(bbox, args.limit ?? 100, corridor);
 
   return {
     query_type: queryType,
@@ -102,7 +107,8 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
       maxX: bbox.maxX,
       maxY: bbox.maxY,
     },
-    count: features.length,
-    features,
+    used_polygon_filter: result.usedPolygonFilter,
+    count: result.features.length,
+    features: result.features,
   };
 });
