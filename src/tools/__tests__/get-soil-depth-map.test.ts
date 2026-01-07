@@ -56,8 +56,8 @@ describe('get-soil-depth-map tool', () => {
       const response = await getSoilDepthMapHandler({
         corridor: {
           coordinates: [
-            [670000, 6570000],
-            [680000, 6580000],
+            { x: 670000, y: 6570000 },
+            { x: 680000, y: 6580000 },
           ],
           bufferMeters: 500,
         },

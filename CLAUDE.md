@@ -16,10 +16,10 @@ https://sgu-mcp.vercel.app/mcp
 
 ### Important: Vercel URL Types
 
-| URL Type | Example | Auth Required | Use For |
-|----------|---------|---------------|---------|
-| **Production alias** | `sgu-mcp.vercel.app` | No | Testing, Claude Desktop |
-| Deployment-specific | `sgu-abc123-omiwato.vercel.app` | Yes (SSO) | Internal only |
+| URL Type             | Example                         | Auth Required | Use For                 |
+| -------------------- | ------------------------------- | ------------- | ----------------------- |
+| **Production alias** | `sgu-mcp.vercel.app`            | No            | Testing, Claude Desktop |
+| Deployment-specific  | `sgu-abc123-omiwato.vercel.app` | Yes (SSO)     | Internal only           |
 
 **Always use the production alias** (`sgu-mcp.vercel.app`) when testing the MCP server. The deployment-specific URLs (shown in `vercel ls`) have authentication protection and will return an HTML login page instead of MCP responses.
 
@@ -31,6 +31,23 @@ https://sgu-mcp.vercel.app/mcp
 
 # Comprehensive test - all tools with validation
 node ~/.claude/scripts/mcp-test-runner.cjs https://sgu-mcp.vercel.app/mcp --all -v
+```
+
+### Post-Deployment Verification
+
+**After using a sub-agent to test, always independently verify critical changes yourself:**
+
+1. Run the test runner directly (don't just trust sub-agent summaries)
+2. For schema changes: test both the NEW format works AND the OLD format is rejected
+3. For breaking changes: verify error messages are helpful for users
+
+```bash
+# Example: Verify a schema change
+# Test new format works:
+~/.claude/scripts/test-mcp.sh https://sgu-mcp.vercel.app/mcp tool_name '{"newFormat": ...}'
+
+# Test old format is rejected with helpful error:
+~/.claude/scripts/test-mcp.sh https://sgu-mcp.vercel.app/mcp tool_name '{"oldFormat": ...}'
 ```
 
 ## Build and Development

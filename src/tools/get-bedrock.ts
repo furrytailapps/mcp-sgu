@@ -18,9 +18,14 @@ export const getBedrockInputSchema = {
   corridor: z
     .object({
       coordinates: z
-        .array(z.tuple([z.number(), z.number()]))
+        .array(
+          z.object({
+            x: z.number().describe('Easting coordinate (SWEREF99TM, EPSG:3006)'),
+            y: z.number().describe('Northing coordinate (SWEREF99TM)'),
+          }),
+        )
         .min(2)
-        .describe('Array of [easting, northing] coordinate pairs defining the centerline'),
+        .describe('Array of coordinate objects defining the centerline'),
       bufferMeters: z
         .number()
         .min(1)
@@ -60,7 +65,7 @@ type GetBedrockInput = {
     maxY: number;
   };
   corridor?: {
-    coordinates: [number, number][];
+    coordinates: { x: number; y: number }[];
     bufferMeters: number;
   };
   limit?: number;

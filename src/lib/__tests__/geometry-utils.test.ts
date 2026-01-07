@@ -145,8 +145,8 @@ describe('geometry-utils', () => {
     it('should convert corridor to bbox with buffer', () => {
       const corridor: Corridor = {
         coordinates: [
-          [670000, 6570000],
-          [680000, 6580000],
+          { x: 670000, y: 6570000 },
+          { x: 680000, y: 6580000 },
         ],
         bufferMeters: 100,
       };
@@ -159,7 +159,7 @@ describe('geometry-utils', () => {
 
     it('should throw for corridor with less than 2 points', () => {
       const corridor: Corridor = {
-        coordinates: [[670000, 6570000]],
+        coordinates: [{ x: 670000, y: 6570000 }],
         bufferMeters: 100,
       };
       expect(() => corridorToBoundingBox(corridor)).toThrow(ValidationError);
@@ -169,9 +169,9 @@ describe('geometry-utils', () => {
     it('should handle multi-point corridors', () => {
       const corridor: Corridor = {
         coordinates: [
-          [670000, 6570000],
-          [675000, 6575000],
-          [680000, 6580000],
+          { x: 670000, y: 6570000 },
+          { x: 675000, y: 6575000 },
+          { x: 680000, y: 6580000 },
         ],
         bufferMeters: 50,
       };
@@ -187,8 +187,8 @@ describe('geometry-utils', () => {
     it('should convert corridor to WKT polygon', () => {
       const corridor: Corridor = {
         coordinates: [
-          [670000, 6570000],
-          [670000, 6580000],
+          { x: 670000, y: 6570000 },
+          { x: 670000, y: 6580000 },
         ],
         bufferMeters: 100,
       };
@@ -199,7 +199,7 @@ describe('geometry-utils', () => {
 
     it('should throw for corridor with less than 2 points', () => {
       const corridor: Corridor = {
-        coordinates: [[670000, 6570000]],
+        coordinates: [{ x: 670000, y: 6570000 }],
         bufferMeters: 100,
       };
       expect(() => corridorToWktPolygon(corridor)).toThrow(ValidationError);

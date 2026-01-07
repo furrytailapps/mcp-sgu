@@ -27,7 +27,7 @@ export interface Point {
  * Corridor definition (line with buffer)
  */
 export interface Corridor {
-  coordinates: [number, number][]; // Array of [easting, northing] pairs
+  coordinates: { x: number; y: number }[]; // Array of coordinate objects
   bufferMeters: number;
 }
 
@@ -107,7 +107,7 @@ export function corridorToBoundingBox(corridor: Corridor): BoundingBox {
   let maxX = -Infinity;
   let maxY = -Infinity;
 
-  for (const [x, y] of corridor.coordinates) {
+  for (const { x, y } of corridor.coordinates) {
     if (x < minX) minX = x;
     if (x > maxX) maxX = x;
     if (y < minY) minY = y;
@@ -137,29 +137,29 @@ export function corridorToWktPolygon(corridor: Corridor): string {
   const coords = corridor.coordinates;
 
   // Calculate offset points for left and right sides of the line
-  const leftSide: [number, number][] = [];
-  const rightSide: [number, number][] = [];
+  const leftSide: { x: number; y: number }[] = [];
+  const rightSide: { x: number; y: number }[] = [];
 
   for (let i = 0; i < coords.length; i++) {
-    const [x, y] = coords[i];
+    const { x, y } = coords[i];
 
     // Calculate perpendicular direction
     let dx: number, dy: number;
 
     if (i === 0) {
       // First point: use direction to next point
-      dx = coords[1][0] - x;
-      dy = coords[1][1] - y;
+      dx = coords[1].x - x;
+      dy = coords[1].y - y;
     } else if (i === coords.length - 1) {
       // Last point: use direction from previous point
-      dx = x - coords[i - 1][0];
-      dy = y - coords[i - 1][1];
+      dx = x - coords[i - 1].x;
+      dy = y - coords[i - 1].y;
     } else {
       // Middle points: average of incoming and outgoing directions
-      const dx1 = x - coords[i - 1][0];
-      const dy1 = y - coords[i - 1][1];
-      const dx2 = coords[i + 1][0] - x;
-      const dy2 = coords[i + 1][1] - y;
+      const dx1 = x - coords[i - 1].x;
+      const dy1 = y - coords[i - 1].y;
+      const dx2 = coords[i + 1].x - x;
+      const dy2 = coords[i + 1].y - y;
       dx = dx1 + dx2;
       dy = dy1 + dy2;
     }
@@ -172,14 +172,14 @@ export function corridorToWktPolygon(corridor: Corridor): string {
     const perpY = dx / len;
 
     // Offset points
-    leftSide.push([x + perpX * buffer, y + perpY * buffer]);
-    rightSide.push([x - perpX * buffer, y - perpY * buffer]);
+    leftSide.push({ x: x + perpX * buffer, y: y + perpY * buffer });
+    rightSide.push({ x: x - perpX * buffer, y: y - perpY * buffer });
   }
 
   // Build polygon: left side forward, right side backward, close
   const polygonCoords = [...leftSide, ...rightSide.reverse(), leftSide[0]];
 
-  const coordString = polygonCoords.map(([x, y]) => `${x} ${y}`).join(', ');
+  const coordString = polygonCoords.map(({ x, y }) => `${x} ${y}`).join(', ');
   return `POLYGON((${coordString}))`;
 }
 
