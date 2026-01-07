@@ -6,6 +6,33 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an MCP (Model Context Protocol) server that wraps the Sveriges Geologiska Undersökning (SGU) APIs for querying geological data in Sweden. Built with Next.js and TypeScript, targeting construction and infrastructure users.
 
+## Deployment
+
+### Production URL (USE THIS FOR TESTING)
+
+```
+https://sgu-mcp.vercel.app/mcp
+```
+
+### Important: Vercel URL Types
+
+| URL Type | Example | Auth Required | Use For |
+|----------|---------|---------------|---------|
+| **Production alias** | `sgu-mcp.vercel.app` | No | Testing, Claude Desktop |
+| Deployment-specific | `sgu-abc123-omiwato.vercel.app` | Yes (SSO) | Internal only |
+
+**Always use the production alias** (`sgu-mcp.vercel.app`) when testing the MCP server. The deployment-specific URLs (shown in `vercel ls`) have authentication protection and will return an HTML login page instead of MCP responses.
+
+### Testing the Deployed Server
+
+```bash
+# Quick test - list all tools
+~/.claude/scripts/test-mcp.sh https://sgu-mcp.vercel.app/mcp
+
+# Comprehensive test - all tools with validation
+node ~/.claude/scripts/mcp-test-runner.cjs https://sgu-mcp.vercel.app/mcp --all -v
+```
+
 ## Build and Development
 
 ### Common Commands
@@ -32,22 +59,28 @@ src/
 ├── app/              # Next.js app routes
 │   └── [transport]/  # MCP transport endpoint
 ├── clients/          # API clients
-│   └── sgu-client.ts # SGU API client
+│   └── sgu-client.ts # SGU API client (all WMS/OGC methods)
 ├── lib/              # Shared utilities
 │   ├── errors.ts     # Error classes
 │   ├── http-client.ts # HTTP wrapper
 │   ├── response.ts   # Response helpers
 │   ├── geometry-utils.ts # Bbox/corridor utilities
+│   ├── map-tool-handler.ts # Shared map tool handler factory
 │   ├── ogc-client.ts # OGC API Features client
 │   └── wms-client.ts # WMS client
-├── tools/            # MCP tool definitions
+├── tools/            # MCP tool definitions (8 tools)
 │   ├── index.ts      # Tool registry
 │   ├── get-bedrock.ts
 │   ├── get-bedrock-map.ts
 │   ├── get-soil-types-map.ts
-│   └── get-soil-type-at-point.ts
+│   ├── get-soil-type-at-point.ts
+│   ├── get-boulder-coverage-map.ts
+│   ├── get-soil-depth-map.ts
+│   ├── get-groundwater-map.ts
+│   └── get-landslide-map.ts
 └── types/            # TypeScript type definitions
-    └── sgu-api.ts    # SGU API types
+    ├── sgu-api.ts    # SGU API types
+    └── common-schemas.ts # Shared Zod schemas for map tools
 ```
 
 ## TypeScript Configuration
