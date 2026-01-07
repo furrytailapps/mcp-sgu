@@ -21,6 +21,9 @@ const SGU_OGC_BEDROCK_URL = 'https://api.sgu.se/oppnadata/berggrund50k-250k/ogc/
 const SGU_WMS_BEDROCK_URL = 'https://maps3.sgu.se/geoserver/berg/ows';
 const SGU_WMS_SOIL_TYPES_URL = 'https://maps3.sgu.se/geoserver/jord/ows';
 const SGU_WMS_GROUNDWATER_URL = 'https://maps3.sgu.se/geoserver/ows';
+// Legacy resource.sgu.se WMS endpoints
+const SGU_WMS_GAMMA_URL = 'https://resource.sgu.se/service/wms/130/flyggeofysik-gammastralning-uran';
+const SGU_WMS_WELLS_URL = 'https://resource.sgu.se/service/wms/130/brunnar';
 
 // ============================================================================
 // Client instances
@@ -46,6 +49,16 @@ const groundwaterWmsClient = createWmsClient({
   timeout: 30000,
 });
 
+const gammaWmsClient = createWmsClient({
+  baseUrl: SGU_WMS_GAMMA_URL,
+  timeout: 30000,
+});
+
+const wellsWmsClient = createWmsClient({
+  baseUrl: SGU_WMS_WELLS_URL,
+  timeout: 30000,
+});
+
 // ============================================================================
 // WMS Layers (INSPIRE-style layer names)
 // ============================================================================
@@ -56,6 +69,11 @@ const BOULDER_COVERAGE_LAYERS = ['SE.GOV.SGU.JORD.BLOCKIGHET.25K'];
 const SOIL_DEPTH_LAYERS = ['SE.GOV.SGU.JORD.JORDDJUP.50K'];
 const GROUNDWATER_LAYERS = ['SE.GOV.SGU.HMAG.GRUNDVATTENMAGASIN_J1.V2'];
 const LANDSLIDE_LAYERS = ['SE.GOV.SGU.JORD.SKRED'];
+// Legacy layers (resource.sgu.se uses simple layer names)
+const RADON_RISK_LAYERS = ['Uran'];
+const WELLS_LAYERS = ['Brunnar'];
+// Groundwater vulnerability (on maps3.sgu.se)
+const GROUNDWATER_VULNERABILITY_LAYERS = ['SE.GOV.SGU.GRUNDVATTEN.SARBARHET_3KL'];
 
 // ============================================================================
 // Cached legend URLs (static, only depend on layer name)
@@ -68,6 +86,9 @@ const LEGEND_URLS = {
   soilDepth: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${SOIL_DEPTH_LAYERS[0]}&FORMAT=image%2Fpng`,
   groundwater: `${SGU_WMS_GROUNDWATER_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${GROUNDWATER_LAYERS[0]}&FORMAT=image%2Fpng`,
   landslide: `${SGU_WMS_SOIL_TYPES_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${LANDSLIDE_LAYERS[0]}&FORMAT=image%2Fpng`,
+  radonRisk: `${SGU_WMS_GAMMA_URL}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=${RADON_RISK_LAYERS[0]}&FORMAT=image%2Fpng`,
+  wells: `${SGU_WMS_WELLS_URL}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=${WELLS_LAYERS[0]}&FORMAT=image%2Fpng`,
+  groundwaterVulnerability: `${SGU_WMS_GROUNDWATER_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${GROUNDWATER_VULNERABILITY_LAYERS[0]}&FORMAT=image%2Fpng`,
 } as const;
 
 // ============================================================================
@@ -287,5 +308,61 @@ export const sguClient = {
     });
 
     return buildMapResponse(mapUrl, LEGEND_URLS.landslide, bbox, LANDSLIDE_LAYERS);
+  },
+
+  /**
+   * Get a radon risk map URL for a bounding box
+   * Shows gamma radiation (uranium) levels as proxy for radon risk
+   * Uses legacy resource.sgu.se WMS (WMS 1.1.1)
+   */
+  getRadonRiskMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
+    const { width = 800, height = 600, format = 'png' } = options;
+
+    const mapUrl = gammaWmsClient.getMapUrl({
+      layers: RADON_RISK_LAYERS,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+
+    return buildMapResponse(mapUrl, LEGEND_URLS.radonRisk, bbox, RADON_RISK_LAYERS);
+  },
+
+  /**
+   * Get a wells map URL for a bounding box
+   * Shows groundwater wells and boreholes
+   * Uses legacy resource.sgu.se WMS (WMS 1.1.1)
+   */
+  getWellsMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
+    const { width = 800, height = 600, format = 'png' } = options;
+
+    const mapUrl = wellsWmsClient.getMapUrl({
+      layers: WELLS_LAYERS,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+
+    return buildMapResponse(mapUrl, LEGEND_URLS.wells, bbox, WELLS_LAYERS);
+  },
+
+  /**
+   * Get a groundwater vulnerability map URL for a bounding box
+   * Shows 3-class groundwater vulnerability assessment
+   */
+  getGroundwaterVulnerabilityMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
+    const { width = 800, height = 600, format = 'png' } = options;
+
+    const mapUrl = groundwaterWmsClient.getMapUrl({
+      layers: GROUNDWATER_VULNERABILITY_LAYERS,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+
+    return buildMapResponse(mapUrl, LEGEND_URLS.groundwaterVulnerability, bbox, GROUNDWATER_VULNERABILITY_LAYERS);
   },
 };

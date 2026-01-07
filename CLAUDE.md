@@ -85,7 +85,7 @@ src/
 │   ├── map-tool-handler.ts # Shared map tool handler factory
 │   ├── ogc-client.ts # OGC API Features client
 │   └── wms-client.ts # WMS client
-├── tools/            # MCP tool definitions (8 tools)
+├── tools/            # MCP tool definitions (11 tools)
 │   ├── index.ts      # Tool registry
 │   ├── get-bedrock.ts
 │   ├── get-bedrock-map.ts
@@ -94,7 +94,10 @@ src/
 │   ├── get-boulder-coverage-map.ts
 │   ├── get-soil-depth-map.ts
 │   ├── get-groundwater-map.ts
-│   └── get-landslide-map.ts
+│   ├── get-groundwater-vulnerability-map.ts
+│   ├── get-landslide-map.ts
+│   ├── get-radon-risk-map.ts
+│   └── get-wells-map.ts
 └── types/            # TypeScript type definitions
     ├── sgu-api.ts    # SGU API types
     └── common-schemas.ts # Shared Zod schemas for map tools

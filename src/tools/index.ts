@@ -7,6 +7,9 @@ import { getBoulderCoverageMapTool, getBoulderCoverageMapHandler } from './get-b
 import { getSoilDepthMapTool, getSoilDepthMapHandler } from './get-soil-depth-map';
 import { getGroundwaterMapTool, getGroundwaterMapHandler } from './get-groundwater-map';
 import { getLandslideMapTool, getLandslideMapHandler } from './get-landslide-map';
+import { getRadonRiskMapTool, getRadonRiskMapHandler } from './get-radon-risk-map';
+import { getWellsMapTool, getWellsMapHandler } from './get-wells-map';
+import { getGroundwaterVulnerabilityMapTool, getGroundwaterVulnerabilityMapHandler } from './get-groundwater-vulnerability-map';
 
 // Tool registry: all tools must be added here
 const tools = [
@@ -18,6 +21,9 @@ const tools = [
   { definition: getSoilDepthMapTool, handler: getSoilDepthMapHandler },
   { definition: getGroundwaterMapTool, handler: getGroundwaterMapHandler },
   { definition: getLandslideMapTool, handler: getLandslideMapHandler },
+  { definition: getRadonRiskMapTool, handler: getRadonRiskMapHandler },
+  { definition: getWellsMapTool, handler: getWellsMapHandler },
+  { definition: getGroundwaterVulnerabilityMapTool, handler: getGroundwaterVulnerabilityMapHandler },
 ];
 
 /**
