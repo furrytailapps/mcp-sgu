@@ -114,6 +114,28 @@ function buildMapResponse(mapUrl: string, legendUrl: string, bbox: BoundingBox, 
   };
 }
 
+/**
+ * Factory function to create map URL methods
+ * Eliminates repetitive boilerplate across all map methods
+ */
+function createMapUrlMethod(
+  wmsClient: ReturnType<typeof createWmsClient>,
+  layers: string[],
+  legendKey: keyof typeof LEGEND_URLS,
+): (bbox: BoundingBox, options?: MapOptions) => MapResponse {
+  return (bbox: BoundingBox, options: MapOptions = {}): MapResponse => {
+    const { width = 800, height = 600, format = 'png' } = options;
+    const mapUrl = wmsClient.getMapUrl({
+      layers,
+      bbox,
+      width,
+      height,
+      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
+    });
+    return buildMapResponse(mapUrl, LEGEND_URLS[legendKey], bbox, layers);
+  };
+}
+
 // ============================================================================
 // SGU Client API
 // ============================================================================
@@ -171,75 +193,17 @@ export const sguClient = {
     }
   },
 
-  /**
-   * Get a bedrock map URL for a bounding box
-   */
-  getBedrockMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
+  /** Get a bedrock map URL for a bounding box */
+  getBedrockMapUrl: createMapUrlMethod(bedrockWmsClient, BEDROCK_LAYERS, 'bedrock'),
 
-    const mapUrl = bedrockWmsClient.getMapUrl({
-      layers: BEDROCK_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
+  /** Get a soil types map URL for a bounding box */
+  getSoilTypesMapUrl: createMapUrlMethod(soilTypesWmsClient, SOIL_TYPES_LAYERS, 'soilTypes'),
 
-    return buildMapResponse(mapUrl, LEGEND_URLS.bedrock, bbox, BEDROCK_LAYERS);
-  },
+  /** Get a boulder coverage map URL (shows blockiness/boulder density) */
+  getBoulderCoverageMapUrl: createMapUrlMethod(soilTypesWmsClient, BOULDER_COVERAGE_LAYERS, 'boulderCoverage'),
 
-  /**
-   * Get a soil types map URL for a bounding box
-   */
-  getSoilTypesMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
-
-    const mapUrl = soilTypesWmsClient.getMapUrl({
-      layers: SOIL_TYPES_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
-
-    return buildMapResponse(mapUrl, LEGEND_URLS.soilTypes, bbox, SOIL_TYPES_LAYERS);
-  },
-
-  /**
-   * Get a boulder coverage map URL for a bounding box
-   * Shows blockiness/boulder density in the soil
-   */
-  getBoulderCoverageMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
-
-    const mapUrl = soilTypesWmsClient.getMapUrl({
-      layers: BOULDER_COVERAGE_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
-
-    return buildMapResponse(mapUrl, LEGEND_URLS.boulderCoverage, bbox, BOULDER_COVERAGE_LAYERS);
-  },
-
-  /**
-   * Get a soil depth map URL for a bounding box
-   * Shows estimated depth to bedrock
-   */
-  getSoilDepthMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
-
-    const mapUrl = soilTypesWmsClient.getMapUrl({
-      layers: SOIL_DEPTH_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
-
-    return buildMapResponse(mapUrl, LEGEND_URLS.soilDepth, bbox, SOIL_DEPTH_LAYERS);
-  },
+  /** Get a soil depth map URL (shows estimated depth to bedrock) */
+  getSoilDepthMapUrl: createMapUrlMethod(soilTypesWmsClient, SOIL_DEPTH_LAYERS, 'soilDepth'),
 
   /**
    * Get soil type info at a specific point using WMS GetFeatureInfo
@@ -274,95 +238,22 @@ export const sguClient = {
     return transformSoilTypeInfo(response);
   },
 
-  /**
-   * Get a groundwater aquifers map URL for a bounding box
-   * Shows groundwater reservoirs/aquifers in soil layers (J1)
-   */
-  getGroundwaterMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
+  /** Get a groundwater aquifers map URL (shows groundwater reservoirs in J1 soil layers) */
+  getGroundwaterMapUrl: createMapUrlMethod(groundwaterWmsClient, GROUNDWATER_LAYERS, 'groundwater'),
 
-    const mapUrl = groundwaterWmsClient.getMapUrl({
-      layers: GROUNDWATER_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
+  /** Get a landslide map URL (shows historical landslide areas) */
+  getLandslideMapUrl: createMapUrlMethod(soilTypesWmsClient, LANDSLIDE_LAYERS, 'landslide'),
 
-    return buildMapResponse(mapUrl, LEGEND_URLS.groundwater, bbox, GROUNDWATER_LAYERS);
-  },
+  /** Get a radon risk map URL (gamma radiation/uranium as proxy for radon) */
+  getRadonRiskMapUrl: createMapUrlMethod(gammaWmsClient, RADON_RISK_LAYERS, 'radonRisk'),
 
-  /**
-   * Get a landslide map URL for a bounding box
-   * Shows historical landslide areas
-   */
-  getLandslideMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
+  /** Get a wells map URL (shows groundwater wells and boreholes) */
+  getWellsMapUrl: createMapUrlMethod(wellsWmsClient, WELLS_LAYERS, 'wells'),
 
-    const mapUrl = soilTypesWmsClient.getMapUrl({
-      layers: LANDSLIDE_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
-
-    return buildMapResponse(mapUrl, LEGEND_URLS.landslide, bbox, LANDSLIDE_LAYERS);
-  },
-
-  /**
-   * Get a radon risk map URL for a bounding box
-   * Shows gamma radiation (uranium) levels as proxy for radon risk
-   * Uses legacy resource.sgu.se WMS (WMS 1.1.1)
-   */
-  getRadonRiskMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
-
-    const mapUrl = gammaWmsClient.getMapUrl({
-      layers: RADON_RISK_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
-
-    return buildMapResponse(mapUrl, LEGEND_URLS.radonRisk, bbox, RADON_RISK_LAYERS);
-  },
-
-  /**
-   * Get a wells map URL for a bounding box
-   * Shows groundwater wells and boreholes
-   * Uses legacy resource.sgu.se WMS (WMS 1.1.1)
-   */
-  getWellsMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
-
-    const mapUrl = wellsWmsClient.getMapUrl({
-      layers: WELLS_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
-
-    return buildMapResponse(mapUrl, LEGEND_URLS.wells, bbox, WELLS_LAYERS);
-  },
-
-  /**
-   * Get a groundwater vulnerability map URL for a bounding box
-   * Shows 3-class groundwater vulnerability assessment
-   */
-  getGroundwaterVulnerabilityMapUrl(bbox: BoundingBox, options: MapOptions = {}): MapResponse {
-    const { width = 800, height = 600, format = 'png' } = options;
-
-    const mapUrl = groundwaterWmsClient.getMapUrl({
-      layers: GROUNDWATER_VULNERABILITY_LAYERS,
-      bbox,
-      width,
-      height,
-      format: format === 'jpeg' ? 'image/jpeg' : 'image/png',
-    });
-
-    return buildMapResponse(mapUrl, LEGEND_URLS.groundwaterVulnerability, bbox, GROUNDWATER_VULNERABILITY_LAYERS);
-  },
+  /** Get a groundwater vulnerability map URL (3-class vulnerability assessment) */
+  getGroundwaterVulnerabilityMapUrl: createMapUrlMethod(
+    groundwaterWmsClient,
+    GROUNDWATER_VULNERABILITY_LAYERS,
+    'groundwaterVulnerability',
+  ),
 };

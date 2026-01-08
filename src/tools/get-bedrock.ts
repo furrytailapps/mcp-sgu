@@ -3,39 +3,11 @@ import { sguClient } from '@/clients/sgu-client';
 import { withErrorHandling } from '@/lib/response';
 import { ValidationError } from '@/lib/errors';
 import { BoundingBox, corridorToBoundingBox, validateBbox, CRS_SWEREF99TM } from '@/lib/geometry-utils';
+import { bboxSchema, corridorSchema, MapToolInput } from '@/types/common-schemas';
 
 export const getBedrockInputSchema = {
-  bbox: z
-    .object({
-      minX: z.number().describe('Minimum X coordinate (Easting in SWEREF99TM, EPSG:3006)'),
-      minY: z.number().describe('Minimum Y coordinate (Northing in SWEREF99TM)'),
-      maxX: z.number().describe('Maximum X coordinate (Easting in SWEREF99TM)'),
-      maxY: z.number().describe('Maximum Y coordinate (Northing in SWEREF99TM)'),
-    })
-    .optional()
-    .describe('Bounding box for area query in SWEREF99TM coordinates'),
-
-  corridor: z
-    .object({
-      coordinates: z
-        .array(
-          z.object({
-            x: z.number().describe('Easting coordinate (SWEREF99TM, EPSG:3006)'),
-            y: z.number().describe('Northing coordinate (SWEREF99TM)'),
-          }),
-        )
-        .min(2)
-        .describe('Array of coordinate objects defining the centerline'),
-      bufferMeters: z
-        .number()
-        .min(1)
-        .max(10000)
-        .default(500)
-        .describe('Buffer distance in meters on each side of the line (default: 500m)'),
-    })
-    .optional()
-    .describe('Corridor query for linear infrastructure (line with buffer)'),
-
+  bbox: bboxSchema,
+  corridor: corridorSchema,
   limit: z
     .number()
     .int()
@@ -57,19 +29,7 @@ export const getBedrockTool = {
   inputSchema: getBedrockInputSchema,
 };
 
-type GetBedrockInput = {
-  bbox?: {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-  };
-  corridor?: {
-    coordinates: { x: number; y: number }[];
-    bufferMeters: number;
-  };
-  limit?: number;
-};
+type GetBedrockInput = MapToolInput & { limit?: number };
 
 export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput) => {
   // Validate: at least one geometry parameter must be provided
