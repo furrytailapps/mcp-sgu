@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable experimental features for better performance
-  experimental: {
-    serverComponentsExternalPackages: ['@modelcontextprotocol/sdk'],
-  },
+  // External packages for server components
+  serverExternalPackages: ['@modelcontextprotocol/sdk'],
 };
 
 export default nextConfig;
