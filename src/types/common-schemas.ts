@@ -2,41 +2,55 @@ import { z } from 'zod';
 
 /**
  * Shared Zod schemas for map tools
- * All map tools (bedrock, soil types, boulder coverage, soil depth, groundwater, landslide)
- * use the same input parameters for map generation.
+ * All map tools use flat parameters for better OpenAI/LLM compatibility.
+ *
+ * Two modes:
+ * 1. Bbox mode: Provide minX, minY, maxX, maxY
+ * 2. Corridor mode: Provide coordinates array + optional bufferMeters
  */
 
-export const bboxSchema = z
-  .object({
-    minX: z.number().describe('Minimum X coordinate (Easting in SWEREF99TM, EPSG:3006)'),
-    minY: z.number().describe('Minimum Y coordinate (Northing in SWEREF99TM)'),
-    maxX: z.number().describe('Maximum X coordinate (Easting in SWEREF99TM)'),
-    maxY: z.number().describe('Maximum Y coordinate (Northing in SWEREF99TM)'),
-  })
+// Bbox parameters (flat, not nested)
+export const minXSchema = z
+  .number()
   .optional()
-  .describe('Bounding box for the map extent in SWEREF99TM coordinates');
+  .describe('Minimum X coordinate (Easting in SWEREF99TM, EPSG:3006). Use with minY, maxX, maxY for bbox mode.');
 
-export const corridorSchema = z
-  .object({
-    coordinates: z
-      .array(
-        z.object({
-          x: z.number().describe('Easting coordinate (SWEREF99TM, EPSG:3006)'),
-          y: z.number().describe('Northing coordinate (SWEREF99TM)'),
-        }),
-      )
-      .min(2)
-      .describe('Array of coordinate objects defining the centerline'),
-    bufferMeters: z
-      .number()
-      .min(1)
-      .max(10000)
-      .default(500)
-      .describe('Buffer distance in meters on each side of the line (default: 500m)'),
-  })
+export const minYSchema = z
+  .number()
   .optional()
-  .describe('Corridor query for linear infrastructure (line with buffer)');
+  .describe('Minimum Y coordinate (Northing in SWEREF99TM). Use with minX, maxX, maxY for bbox mode.');
 
+export const maxXSchema = z
+  .number()
+  .optional()
+  .describe('Maximum X coordinate (Easting in SWEREF99TM). Use with minX, minY, maxY for bbox mode.');
+
+export const maxYSchema = z
+  .number()
+  .optional()
+  .describe('Maximum Y coordinate (Northing in SWEREF99TM). Use with minX, minY, maxX for bbox mode.');
+
+// Corridor parameters (flat)
+export const coordinatesSchema = z
+  .array(
+    z.object({
+      x: z.number().describe('Easting coordinate (SWEREF99TM, EPSG:3006)'),
+      y: z.number().describe('Northing coordinate (SWEREF99TM)'),
+    }),
+  )
+  .min(2)
+  .optional()
+  .describe('Array of coordinate points defining a corridor centerline. Use with bufferMeters for corridor mode.');
+
+export const bufferMetersSchema = z
+  .number()
+  .min(1)
+  .max(10000)
+  .default(500)
+  .optional()
+  .describe('Buffer distance in meters on each side of the corridor line (default: 500m)');
+
+// Image parameters
 export const widthSchema = z
   .number()
   .int()
@@ -58,30 +72,36 @@ export const heightSchema = z
 export const formatSchema = z.enum(['png', 'jpeg']).default('png').optional().describe('Image format (default: png)');
 
 /**
- * Complete schema object for map tool inputs
+ * Complete schema object for map tool inputs (flat parameters)
  */
 export const mapToolInputSchema = {
-  bbox: bboxSchema,
-  corridor: corridorSchema,
+  // Bbox mode parameters
+  minX: minXSchema,
+  minY: minYSchema,
+  maxX: maxXSchema,
+  maxY: maxYSchema,
+  // Corridor mode parameters
+  coordinates: coordinatesSchema,
+  bufferMeters: bufferMetersSchema,
+  // Image parameters
   width: widthSchema,
   height: heightSchema,
   format: formatSchema,
 };
 
 /**
- * TypeScript type for map tool inputs
+ * TypeScript type for map tool inputs (flat structure)
  */
 export type MapToolInput = {
-  bbox?: {
-    minX: number;
-    minY: number;
-    maxX: number;
-    maxY: number;
-  };
-  corridor?: {
-    coordinates: { x: number; y: number }[];
-    bufferMeters: number;
-  };
+  // Bbox mode
+  minX?: number;
+  minY?: number;
+  maxX?: number;
+  maxY?: number;
+  // Corridor mode
+  coordinates?: { x: number; y: number }[];
+  bufferMeters?: number;
+  // Image options
   width?: number;
   height?: number;
   format?: 'png' | 'jpeg';

@@ -3,11 +3,26 @@ import { sguClient } from '@/clients/sgu-client';
 import { withErrorHandling } from '@/lib/response';
 import { ValidationError } from '@/lib/errors';
 import { BoundingBox, corridorToBoundingBox, validateBbox, CRS_SWEREF99TM } from '@/lib/geometry-utils';
-import { bboxSchema, corridorSchema, MapToolInput } from '@/types/common-schemas';
+import {
+  minXSchema,
+  minYSchema,
+  maxXSchema,
+  maxYSchema,
+  coordinatesSchema,
+  bufferMetersSchema,
+  MapToolInput,
+} from '@/types/common-schemas';
 
 export const getBedrockInputSchema = {
-  bbox: bboxSchema,
-  corridor: corridorSchema,
+  // Bbox mode parameters (flat)
+  minX: minXSchema,
+  minY: minYSchema,
+  maxX: maxXSchema,
+  maxY: maxYSchema,
+  // Corridor mode parameters (flat)
+  coordinates: coordinatesSchema,
+  bufferMeters: bufferMetersSchema,
+  // Bedrock-specific parameters
   limit: z
     .number()
     .int()
@@ -23,7 +38,7 @@ export const getBedrockTool = {
   description:
     'Get bedrock geology data for an area in Sweden. ' +
     'Returns information about rock types, geological units, lithology, and tectonic units. ' +
-    'You must provide either a bounding box (bbox) or a corridor (line with buffer). ' +
+    'You must provide either bbox parameters (minX, minY, maxX, maxY) or corridor parameters (coordinates array). ' +
     'All coordinates must be in SWEREF99TM (EPSG:3006). ' +
     'Useful for construction planning, tunnel projects, and infrastructure assessment.',
   inputSchema: getBedrockInputSchema,
@@ -31,17 +46,34 @@ export const getBedrockTool = {
 
 type GetBedrockInput = MapToolInput & { limit?: number };
 
+/**
+ * Check if bbox parameters are provided (flat structure)
+ */
+function hasBboxParams(args: MapToolInput): boolean {
+  return args.minX !== undefined && args.minY !== undefined && args.maxX !== undefined && args.maxY !== undefined;
+}
+
+/**
+ * Check if corridor parameters are provided (flat structure)
+ */
+function hasCorridorParams(args: MapToolInput): boolean {
+  return args.coordinates !== undefined && args.coordinates.length >= 2;
+}
+
 export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput) => {
-  // Validate: at least one geometry parameter must be provided
-  if (!args.bbox && !args.corridor) {
-    throw new ValidationError('Either bbox or corridor must be provided');
+  const hasBbox = hasBboxParams(args);
+  const hasCorridor = hasCorridorParams(args);
+
+  // Validate: at least one geometry parameter set must be provided
+  if (!hasBbox && !hasCorridor) {
+    throw new ValidationError('Either bbox (minX, minY, maxX, maxY) or corridor (coordinates array) must be provided');
   }
 
   // Build corridor object if provided
-  const corridor = args.corridor
+  const corridor = hasCorridor
     ? {
-        coordinates: args.corridor.coordinates,
-        bufferMeters: args.corridor.bufferMeters ?? 500,
+        coordinates: args.coordinates!,
+        bufferMeters: args.bufferMeters ?? 500,
       }
     : undefined;
 
@@ -53,7 +85,12 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
     bbox = corridorToBoundingBox(corridor);
     queryType = 'corridor';
   } else {
-    bbox = args.bbox as BoundingBox;
+    bbox = {
+      minX: args.minX!,
+      minY: args.minY!,
+      maxX: args.maxX!,
+      maxY: args.maxY!,
+    };
     queryType = 'bbox';
   }
 

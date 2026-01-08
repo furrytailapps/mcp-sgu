@@ -10,6 +10,25 @@ import {
   SguSoilTypeInfoResponse,
   transformBedrockFeature,
   transformSoilTypeInfo,
+  // Point query types
+  SguBedrockInfoResponse,
+  SguSoilDepthInfoResponse,
+  SguBoulderCoverageInfoResponse,
+  SguGroundwaterInfoResponse,
+  SguLandslideInfoResponse,
+  SguGroundwaterVulnerabilityInfoResponse,
+  BedrockInfo,
+  SoilDepthInfo,
+  BoulderCoverageInfo,
+  GroundwaterInfo,
+  LandslideInfo,
+  GroundwaterVulnerabilityInfo,
+  transformBedrockInfo,
+  transformSoilDepthInfo,
+  transformBoulderCoverageInfo,
+  transformGroundwaterInfo,
+  transformLandslideInfo,
+  transformGroundwaterVulnerabilityInfo,
 } from '@/types/sgu-api';
 
 // ============================================================================
@@ -136,6 +155,46 @@ function createMapUrlMethod(
   };
 }
 
+/**
+ * Factory function to create point query methods
+ * Eliminates repetitive boilerplate across all point query methods
+ */
+function createPointQueryMethod<TResponse, TResult>(
+  wmsClient: ReturnType<typeof createWmsClient>,
+  layers: string[],
+  transform: (response: TResponse) => TResult | null,
+): (point: Point) => Promise<TResult | null> {
+  return async (point: Point): Promise<TResult | null> => {
+    // Create a small bbox around the point for GetFeatureInfo
+    const buffer = 100; // 100 meter buffer
+    const bbox: BoundingBox = {
+      minX: point.x - buffer,
+      minY: point.y - buffer,
+      maxX: point.x + buffer,
+      maxY: point.y + buffer,
+    };
+
+    // Standard image dimensions
+    const width = 256;
+    const height = 256;
+
+    // Calculate pixel position (center of image)
+    const pixelX = Math.floor(width / 2);
+    const pixelY = Math.floor(height / 2);
+
+    const response = await wmsClient.getFeatureInfo<TResponse>({
+      layers,
+      bbox,
+      width,
+      height,
+      x: pixelX,
+      y: pixelY,
+    });
+
+    return transform(response);
+  };
+}
+
 // ============================================================================
 // SGU Client API
 // ============================================================================
@@ -255,5 +314,51 @@ export const sguClient = {
     groundwaterWmsClient,
     GROUNDWATER_VULNERABILITY_LAYERS,
     'groundwaterVulnerability',
+  ),
+
+  // ==========================================================================
+  // Point Query Methods (WMS GetFeatureInfo)
+  // ==========================================================================
+
+  /** Get bedrock info at a specific point using WMS GetFeatureInfo */
+  getBedrockAt: createPointQueryMethod<SguBedrockInfoResponse, BedrockInfo>(
+    bedrockWmsClient,
+    BEDROCK_LAYERS,
+    transformBedrockInfo,
+  ),
+
+  /** Get soil depth info at a specific point */
+  getSoilDepthAt: createPointQueryMethod<SguSoilDepthInfoResponse, SoilDepthInfo>(
+    soilTypesWmsClient,
+    SOIL_DEPTH_LAYERS,
+    transformSoilDepthInfo,
+  ),
+
+  /** Get boulder coverage info at a specific point */
+  getBoulderCoverageAt: createPointQueryMethod<SguBoulderCoverageInfoResponse, BoulderCoverageInfo>(
+    soilTypesWmsClient,
+    BOULDER_COVERAGE_LAYERS,
+    transformBoulderCoverageInfo,
+  ),
+
+  /** Get groundwater aquifer info at a specific point */
+  getGroundwaterAt: createPointQueryMethod<SguGroundwaterInfoResponse, GroundwaterInfo>(
+    groundwaterWmsClient,
+    GROUNDWATER_LAYERS,
+    transformGroundwaterInfo,
+  ),
+
+  /** Get landslide area info at a specific point */
+  getLandslideAt: createPointQueryMethod<SguLandslideInfoResponse, LandslideInfo>(
+    soilTypesWmsClient,
+    LANDSLIDE_LAYERS,
+    transformLandslideInfo,
+  ),
+
+  /** Get groundwater vulnerability info at a specific point */
+  getGroundwaterVulnerabilityAt: createPointQueryMethod<SguGroundwaterVulnerabilityInfoResponse, GroundwaterVulnerabilityInfo>(
+    groundwaterWmsClient,
+    GROUNDWATER_VULNERABILITY_LAYERS,
+    transformGroundwaterVulnerabilityInfo,
   ),
 };

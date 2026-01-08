@@ -29,20 +29,18 @@ describe('get-soil-types-map tool', () => {
     });
 
     it('should have required input schema fields', () => {
-      expect(getSoilTypesMapInputSchema.bbox).toBeDefined();
-      expect(getSoilTypesMapInputSchema.corridor).toBeDefined();
+      expect(getSoilTypesMapInputSchema.minX).toBeDefined();
+      expect(getSoilTypesMapInputSchema.coordinates).toBeDefined();
     });
   });
 
   describe('handler', () => {
     it('should return map URLs for valid bbox', async () => {
       const response = await getSoilTypesMapHandler({
-        bbox: {
-          minX: 670000,
-          minY: 6570000,
-          maxX: 680000,
-          maxY: 6590000,
-        },
+        minX: 670000,
+        minY: 6570000,
+        maxX: 680000,
+        maxY: 6590000,
       });
 
       expect(response.isError).toBeUndefined();

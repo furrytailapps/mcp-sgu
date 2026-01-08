@@ -46,9 +46,13 @@ describe('get-bedrock tool', () => {
       expect(getBedrockTool.description).toContain('geology');
     });
 
-    it('should have bbox and corridor in input schema', () => {
-      expect(getBedrockInputSchema.bbox).toBeDefined();
-      expect(getBedrockInputSchema.corridor).toBeDefined();
+    it('should have flat bbox and corridor params in input schema', () => {
+      expect(getBedrockInputSchema.minX).toBeDefined();
+      expect(getBedrockInputSchema.minY).toBeDefined();
+      expect(getBedrockInputSchema.maxX).toBeDefined();
+      expect(getBedrockInputSchema.maxY).toBeDefined();
+      expect(getBedrockInputSchema.coordinates).toBeDefined();
+      expect(getBedrockInputSchema.bufferMeters).toBeDefined();
       expect(getBedrockInputSchema.limit).toBeDefined();
     });
   });
@@ -56,12 +60,10 @@ describe('get-bedrock tool', () => {
   describe('handler with bbox', () => {
     it('should return bedrock features for valid bbox', async () => {
       const response = await getBedrockHandler({
-        bbox: {
-          minX: 670000,
-          minY: 6570000,
-          maxX: 680000,
-          maxY: 6590000,
-        },
+        minX: 670000,
+        minY: 6570000,
+        maxX: 680000,
+        maxY: 6590000,
       });
 
       expect(response.isError).toBeUndefined();
@@ -75,12 +77,10 @@ describe('get-bedrock tool', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const response = await getBedrockHandler({
-        bbox: {
-          minX: 680000,
-          minY: 6570000,
-          maxX: 670000, // Invalid: maxX < minX
-          maxY: 6590000,
-        },
+        minX: 680000,
+        minY: 6570000,
+        maxX: 670000, // Invalid: maxX < minX
+        maxY: 6590000,
       });
 
       expect(response.isError).toBe(true);
@@ -90,13 +90,11 @@ describe('get-bedrock tool', () => {
   describe('handler with corridor', () => {
     it('should accept corridor input', async () => {
       const response = await getBedrockHandler({
-        corridor: {
-          coordinates: [
-            { x: 670000, y: 6570000 },
-            { x: 680000, y: 6580000 },
-          ],
-          bufferMeters: 500,
-        },
+        coordinates: [
+          { x: 670000, y: 6570000 },
+          { x: 680000, y: 6580000 },
+        ],
+        bufferMeters: 500,
       });
 
       expect(response.isError).toBeUndefined();
@@ -111,17 +109,15 @@ describe('get-bedrock tool', () => {
 
       expect(response.isError).toBe(true);
       const error = JSON.parse(response.content[0].text);
-      expect(error.message).toContain('bbox or corridor');
+      expect(error.message).toContain('bbox');
     });
 
     it('should apply default limit', async () => {
       const response = await getBedrockHandler({
-        bbox: {
-          minX: 670000,
-          minY: 6570000,
-          maxX: 680000,
-          maxY: 6590000,
-        },
+        minX: 670000,
+        minY: 6570000,
+        maxX: 680000,
+        maxY: 6590000,
       });
 
       expect(response.isError).toBeUndefined();

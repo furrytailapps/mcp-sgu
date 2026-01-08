@@ -29,20 +29,18 @@ describe('get-landslide-map tool', () => {
     });
 
     it('should have required input schema fields', () => {
-      expect(getLandslideMapInputSchema.bbox).toBeDefined();
-      expect(getLandslideMapInputSchema.corridor).toBeDefined();
+      expect(getLandslideMapInputSchema.minX).toBeDefined();
+      expect(getLandslideMapInputSchema.coordinates).toBeDefined();
     });
   });
 
   describe('handler', () => {
     it('should return map URLs for valid bbox', async () => {
       const response = await getLandslideMapHandler({
-        bbox: {
-          minX: 670000,
-          minY: 6570000,
-          maxX: 680000,
-          maxY: 6590000,
-        },
+        minX: 670000,
+        minY: 6570000,
+        maxX: 680000,
+        maxY: 6590000,
       });
 
       expect(response.isError).toBeUndefined();
@@ -54,13 +52,11 @@ describe('get-landslide-map tool', () => {
 
     it('should accept corridor input', async () => {
       const response = await getLandslideMapHandler({
-        corridor: {
-          coordinates: [
-            { x: 670000, y: 6570000 },
-            { x: 680000, y: 6580000 },
-          ],
-          bufferMeters: 500,
-        },
+        coordinates: [
+          { x: 670000, y: 6570000 },
+          { x: 680000, y: 6580000 },
+        ],
+        bufferMeters: 500,
       });
 
       expect(response.isError).toBeUndefined();

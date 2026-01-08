@@ -268,3 +268,250 @@ function geometryToWkt(geometry: GeoJsonGeometry): string {
       return `${type}(...)`;
   }
 }
+
+// ============================================================================
+// Point Query Response Types (WMS GetFeatureInfo)
+// ============================================================================
+
+/**
+ * WMS GetFeatureInfo response for bedrock geology
+ * Layer: SE.GOV.SGU.BERG.GEOLOGISK_ENHET.YTA.50K
+ */
+export interface SguBedrockInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: {
+      bergart_tx?: string; // Rock type
+      geo_enh_tx?: string; // Geological unit
+      lito_n_tx?: string; // Lithology
+      tekt_n_tx?: string; // Tectonic unit
+      b_prop_tx?: string; // Rock properties
+      alder_tx?: string; // Age/period
+      // Alternative field names
+      rock_type?: string;
+      geological_unit?: string;
+    };
+  }>;
+}
+
+/**
+ * WMS GetFeatureInfo response for soil depth
+ * Layer: SE.GOV.SGU.JORD.JORDDJUP.50K
+ */
+export interface SguSoilDepthInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: {
+      jorddjup?: string; // Soil depth class
+      Jorddjup?: string; // Capitalized variant
+      jorddjup_tx?: string; // Soil depth text description
+    };
+  }>;
+}
+
+/**
+ * WMS GetFeatureInfo response for boulder coverage
+ * Layer: SE.GOV.SGU.JORD.BLOCKIGHET.25K
+ */
+export interface SguBoulderCoverageInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: {
+      blockighet?: string; // Boulder coverage class
+      Blockighet?: string; // Capitalized variant
+      blockighet_tx?: string; // Text description
+    };
+  }>;
+}
+
+/**
+ * WMS GetFeatureInfo response for groundwater aquifers
+ * Layer: SE.GOV.SGU.HMAG.GRUNDVATTENMAGASIN_J1.V2
+ */
+export interface SguGroundwaterInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: {
+      magasin_tx?: string; // Aquifer type
+      jordlager?: string; // Soil layer
+      kapacitet?: string; // Capacity
+      Magasin?: string; // Capitalized variant
+    };
+  }>;
+}
+
+/**
+ * WMS GetFeatureInfo response for landslide areas
+ * Layer: SE.GOV.SGU.JORD.SKRED
+ */
+export interface SguLandslideInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: {
+      skredtyp?: string; // Landslide type
+      skredtyp_tx?: string; // Landslide type text
+      datum?: string; // Date of landslide
+      Skredtyp?: string; // Capitalized variant
+    };
+  }>;
+}
+
+/**
+ * WMS GetFeatureInfo response for groundwater vulnerability
+ * Layer: SE.GOV.SGU.GRUNDVATTEN.SARBARHET_3KL
+ */
+export interface SguGroundwaterVulnerabilityInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: {
+      sarbarhet?: string; // Vulnerability class (1, 2, 3)
+      Sarbarhet?: string; // Capitalized variant
+      sarbarhet_tx?: string; // Text description
+    };
+  }>;
+}
+
+// ============================================================================
+// Point Query Clean Output Types
+// ============================================================================
+
+/** Clean bedrock point info */
+export interface BedrockInfo {
+  rock_type?: string;
+  geological_unit?: string;
+  lithology?: string;
+  tectonic_unit?: string;
+  rock_properties?: string;
+  age?: string;
+}
+
+/** Clean soil depth info */
+export interface SoilDepthInfo {
+  depth_class?: string;
+  depth_description?: string;
+}
+
+/** Clean boulder coverage info */
+export interface BoulderCoverageInfo {
+  coverage_class?: string;
+  description?: string;
+}
+
+/** Clean groundwater info */
+export interface GroundwaterInfo {
+  aquifer_type?: string;
+  soil_layer?: string;
+  capacity?: string;
+}
+
+/** Clean landslide info */
+export interface LandslideInfo {
+  landslide_type?: string;
+  date?: string;
+  description?: string;
+}
+
+/** Clean groundwater vulnerability info */
+export interface GroundwaterVulnerabilityInfo {
+  vulnerability_class?: string;
+  description?: string;
+}
+
+// ============================================================================
+// Point Query Transform Functions
+// ============================================================================
+
+export function transformBedrockInfo(response: SguBedrockInfoResponse): BedrockInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+  return {
+    rock_type: props.bergart_tx || props.rock_type,
+    geological_unit: props.geo_enh_tx || props.geological_unit,
+    lithology: props.lito_n_tx,
+    tectonic_unit: props.tekt_n_tx,
+    rock_properties: props.b_prop_tx,
+    age: props.alder_tx,
+  };
+}
+
+export function transformSoilDepthInfo(response: SguSoilDepthInfoResponse): SoilDepthInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+  return {
+    depth_class: props.jorddjup || props.Jorddjup,
+    depth_description: props.jorddjup_tx,
+  };
+}
+
+export function transformBoulderCoverageInfo(response: SguBoulderCoverageInfoResponse): BoulderCoverageInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+  return {
+    coverage_class: props.blockighet || props.Blockighet,
+    description: props.blockighet_tx,
+  };
+}
+
+export function transformGroundwaterInfo(response: SguGroundwaterInfoResponse): GroundwaterInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+  return {
+    aquifer_type: props.magasin_tx || props.Magasin,
+    soil_layer: props.jordlager,
+    capacity: props.kapacitet,
+  };
+}
+
+export function transformLandslideInfo(response: SguLandslideInfoResponse): LandslideInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+  return {
+    landslide_type: props.skredtyp || props.Skredtyp || props.skredtyp_tx,
+    date: props.datum,
+    description: props.skredtyp_tx,
+  };
+}
+
+export function transformGroundwaterVulnerabilityInfo(
+  response: SguGroundwaterVulnerabilityInfoResponse,
+): GroundwaterVulnerabilityInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+  const rawClass = props.sarbarhet || props.Sarbarhet;
+
+  // Map numeric class to human-readable
+  const classMap: Record<string, string> = {
+    '1': 'low',
+    '2': 'moderate',
+    '3': 'high',
+  };
+
+  return {
+    vulnerability_class: rawClass ? classMap[rawClass] || rawClass : undefined,
+    description: props.sarbarhet_tx,
+  };
+}

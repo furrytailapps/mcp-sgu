@@ -4,25 +4,47 @@ import { MapToolInput } from '@/types/common-schemas';
 import { MapResponse } from '@/types/sgu-api';
 
 /**
+ * Check if bbox parameters are provided (flat structure)
+ */
+function hasBboxParams(args: MapToolInput): boolean {
+  return args.minX !== undefined && args.minY !== undefined && args.maxX !== undefined && args.maxY !== undefined;
+}
+
+/**
+ * Check if corridor parameters are provided (flat structure)
+ */
+function hasCorridorParams(args: MapToolInput): boolean {
+  return args.coordinates !== undefined && args.coordinates.length >= 2;
+}
+
+/**
  * Common handler logic for map tools
- * Validates input, determines bbox from either bbox or corridor, and validates the bbox
+ * Validates input, determines bbox from either bbox params or corridor params, and validates the bbox
  */
 export function processMapToolInput(args: MapToolInput): BoundingBox {
-  // Validate: at least one geometry parameter must be provided
-  if (!args.bbox && !args.corridor) {
-    throw new ValidationError('Either bbox or corridor must be provided');
+  const hasBbox = hasBboxParams(args);
+  const hasCorridor = hasCorridorParams(args);
+
+  // Validate: at least one geometry parameter set must be provided
+  if (!hasBbox && !hasCorridor) {
+    throw new ValidationError('Either bbox (minX, minY, maxX, maxY) or corridor (coordinates array) must be provided');
   }
 
   // Determine the bounding box to use
   let bbox: BoundingBox;
 
-  if (args.corridor) {
+  if (hasCorridor) {
     bbox = corridorToBoundingBox({
-      coordinates: args.corridor.coordinates,
-      bufferMeters: args.corridor.bufferMeters ?? 500,
+      coordinates: args.coordinates!,
+      bufferMeters: args.bufferMeters ?? 500,
     });
   } else {
-    bbox = args.bbox as BoundingBox;
+    bbox = {
+      minX: args.minX!,
+      minY: args.minY!,
+      maxX: args.maxX!,
+      maxY: args.maxY!,
+    };
   }
 
   // Validate the bounding box

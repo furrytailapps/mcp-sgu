@@ -29,9 +29,13 @@ describe('get-bedrock-map tool', () => {
       expect(getBedrockMapTool.description).toContain('SWEREF99TM');
     });
 
-    it('should have input schema with bbox and corridor', () => {
-      expect(getBedrockMapInputSchema.bbox).toBeDefined();
-      expect(getBedrockMapInputSchema.corridor).toBeDefined();
+    it('should have input schema with flat bbox and corridor params', () => {
+      expect(getBedrockMapInputSchema.minX).toBeDefined();
+      expect(getBedrockMapInputSchema.minY).toBeDefined();
+      expect(getBedrockMapInputSchema.maxX).toBeDefined();
+      expect(getBedrockMapInputSchema.maxY).toBeDefined();
+      expect(getBedrockMapInputSchema.coordinates).toBeDefined();
+      expect(getBedrockMapInputSchema.bufferMeters).toBeDefined();
       expect(getBedrockMapInputSchema.width).toBeDefined();
       expect(getBedrockMapInputSchema.height).toBeDefined();
       expect(getBedrockMapInputSchema.format).toBeDefined();
@@ -41,12 +45,10 @@ describe('get-bedrock-map tool', () => {
   describe('handler with bbox', () => {
     it('should return map URLs for valid bbox', async () => {
       const response = await getBedrockMapHandler({
-        bbox: {
-          minX: 670000,
-          minY: 6570000,
-          maxX: 680000,
-          maxY: 6590000,
-        },
+        minX: 670000,
+        minY: 6570000,
+        maxX: 680000,
+        maxY: 6590000,
       });
 
       expect(response.isError).toBeUndefined();
@@ -61,12 +63,10 @@ describe('get-bedrock-map tool', () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const response = await getBedrockMapHandler({
-        bbox: {
-          minX: 680000, // Invalid: minX > maxX
-          minY: 6570000,
-          maxX: 670000,
-          maxY: 6590000,
-        },
+        minX: 680000, // Invalid: minX > maxX
+        minY: 6570000,
+        maxX: 670000,
+        maxY: 6590000,
       });
 
       expect(response.isError).toBe(true);
@@ -78,13 +78,11 @@ describe('get-bedrock-map tool', () => {
   describe('handler with corridor', () => {
     it('should accept corridor input', async () => {
       const response = await getBedrockMapHandler({
-        corridor: {
-          coordinates: [
-            { x: 670000, y: 6570000 },
-            { x: 680000, y: 6580000 },
-          ],
-          bufferMeters: 500,
-        },
+        coordinates: [
+          { x: 670000, y: 6570000 },
+          { x: 680000, y: 6580000 },
+        ],
+        bufferMeters: 500,
       });
 
       expect(response.isError).toBeUndefined();
@@ -99,19 +97,17 @@ describe('get-bedrock-map tool', () => {
 
       expect(response.isError).toBe(true);
       const error = JSON.parse(response.content[0].text);
-      expect(error.message).toContain('bbox or corridor');
+      expect(error.message).toContain('bbox');
     });
 
     it('should reject coordinates outside Sweden', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const response = await getBedrockMapHandler({
-        bbox: {
-          minX: 100000, // Outside Sweden
-          minY: 6570000,
-          maxX: 110000,
-          maxY: 6590000,
-        },
+        minX: 100000, // Outside Sweden
+        minY: 6570000,
+        maxX: 110000,
+        maxY: 6590000,
       });
 
       expect(response.isError).toBe(true);

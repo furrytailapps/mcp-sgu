@@ -10,6 +10,16 @@ import { getLandslideMapTool, getLandslideMapHandler } from './get-landslide-map
 import { getRadonRiskMapTool, getRadonRiskMapHandler } from './get-radon-risk-map';
 import { getWellsMapTool, getWellsMapHandler } from './get-wells-map';
 import { getGroundwaterVulnerabilityMapTool, getGroundwaterVulnerabilityMapHandler } from './get-groundwater-vulnerability-map';
+// Point query tools
+import { getBedrockAtPointTool, getBedrockAtPointHandler } from './get-bedrock-at-point';
+import { getSoilDepthAtPointTool, getSoilDepthAtPointHandler } from './get-soil-depth-at-point';
+import { getBoulderCoverageAtPointTool, getBoulderCoverageAtPointHandler } from './get-boulder-coverage-at-point';
+import { getGroundwaterAtPointTool, getGroundwaterAtPointHandler } from './get-groundwater-at-point';
+import { getLandslideAtPointTool, getLandslideAtPointHandler } from './get-landslide-at-point';
+import {
+  getGroundwaterVulnerabilityAtPointTool,
+  getGroundwaterVulnerabilityAtPointHandler,
+} from './get-groundwater-vulnerability-at-point';
 
 // Tool registry: all tools must be added here
 const tools = [
@@ -24,6 +34,13 @@ const tools = [
   { definition: getRadonRiskMapTool, handler: getRadonRiskMapHandler },
   { definition: getWellsMapTool, handler: getWellsMapHandler },
   { definition: getGroundwaterVulnerabilityMapTool, handler: getGroundwaterVulnerabilityMapHandler },
+  // Point query tools
+  { definition: getBedrockAtPointTool, handler: getBedrockAtPointHandler },
+  { definition: getSoilDepthAtPointTool, handler: getSoilDepthAtPointHandler },
+  { definition: getBoulderCoverageAtPointTool, handler: getBoulderCoverageAtPointHandler },
+  { definition: getGroundwaterAtPointTool, handler: getGroundwaterAtPointHandler },
+  { definition: getLandslideAtPointTool, handler: getLandslideAtPointHandler },
+  { definition: getGroundwaterVulnerabilityAtPointTool, handler: getGroundwaterVulnerabilityAtPointHandler },
 ];
 
 /**
