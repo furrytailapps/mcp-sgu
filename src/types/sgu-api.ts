@@ -383,6 +383,34 @@ export interface SguGroundwaterVulnerabilityInfoResponse {
   }>;
 }
 
+/**
+ * WMS GetFeatureInfo response for radon risk (gamma radiation/uranium)
+ * Layer: Uran (legacy resource.sgu.se)
+ * Note: Property names vary - some servers return GRAY_INDEX, others use different names
+ */
+export interface SguRadonRiskInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: Record<string, unknown>; // Flexible to handle varying property names
+  }>;
+}
+
+/**
+ * WMS GetFeatureInfo response for wells/boreholes
+ * Layer: Brunnar (legacy resource.sgu.se)
+ * Note: Property names vary - handle multiple casing variations
+ */
+export interface SguWellPointInfoResponse {
+  type: string;
+  features?: Array<{
+    type: string;
+    id?: string;
+    properties: Record<string, unknown>; // Flexible to handle varying property names
+  }>;
+}
+
 // ============================================================================
 // Point Query Clean Output Types
 // ============================================================================
@@ -427,6 +455,22 @@ export interface LandslideInfo {
 export interface GroundwaterVulnerabilityInfo {
   vulnerability_class?: string;
   description?: string;
+}
+
+/** Clean radon risk info */
+export interface RadonRiskInfo {
+  radiation_value?: number;
+  risk_level?: string; // low, moderate, high based on value
+}
+
+/** Clean well point info */
+export interface WellPointInfo {
+  well_id?: number;
+  total_depth_m?: number;
+  soil_depth_m?: number;
+  capacity_ls?: number;
+  groundwater_level_m?: number;
+  usage?: string;
 }
 
 // ============================================================================
@@ -513,5 +557,83 @@ export function transformGroundwaterVulnerabilityInfo(
   return {
     vulnerability_class: rawClass ? classMap[rawClass] || rawClass : undefined,
     description: props.sarbarhet_tx,
+  };
+}
+
+export function transformRadonRiskInfo(response: SguRadonRiskInfoResponse): RadonRiskInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+
+  // Try multiple possible property names for the radiation value
+  // SGU WMS may return GRAY_INDEX, gray_index, value, or other variations
+  let value: number | undefined;
+
+  // Check common property names
+  const possibleKeys = ['GRAY_INDEX', 'gray_index', 'value', 'Value', 'uranium', 'Uranium', 'uran', 'Uran'];
+  for (const key of possibleKeys) {
+    if (typeof props[key] === 'number') {
+      value = props[key] as number;
+      break;
+    }
+  }
+
+  // If no known property found, try to find any numeric value
+  if (value === undefined) {
+    for (const [, val] of Object.entries(props)) {
+      if (typeof val === 'number' && !Number.isNaN(val)) {
+        value = val;
+        break;
+      }
+    }
+  }
+
+  // Map radiation value to risk level
+  // Based on typical uranium concentration thresholds for radon risk
+  let riskLevel: string | undefined;
+  if (value !== undefined) {
+    if (value < 3) {
+      riskLevel = 'low';
+    } else if (value < 5) {
+      riskLevel = 'moderate';
+    } else {
+      riskLevel = 'high';
+    }
+  }
+
+  return {
+    radiation_value: value,
+    risk_level: riskLevel,
+  };
+}
+
+export function transformWellPointInfo(response: SguWellPointInfoResponse): WellPointInfo | null {
+  const feature = response.features?.[0];
+  if (!feature) return null;
+
+  const props = feature.properties;
+
+  // Helper to get value with case variations
+  const getNum = (...keys: string[]): number | undefined => {
+    for (const key of keys) {
+      if (typeof props[key] === 'number') return props[key] as number;
+    }
+    return undefined;
+  };
+  const getStr = (...keys: string[]): string | undefined => {
+    for (const key of keys) {
+      if (typeof props[key] === 'string') return props[key] as string;
+    }
+    return undefined;
+  };
+
+  return {
+    well_id: getNum('brunnsid', 'Brunnsid', 'BRUNNSID', 'well_id', 'wellId'),
+    total_depth_m: getNum('totaldjup', 'Totaldjup', 'TOTALDJUP', 'total_depth'),
+    soil_depth_m: getNum('jorddjup', 'Jorddjup', 'JORDDJUP', 'soil_depth'),
+    capacity_ls: getNum('kapacitet', 'Kapacitet', 'KAPACITET', 'capacity'),
+    groundwater_level_m: getNum('grundvattenniva', 'Grundvattenniva', 'GRUNDVATTENNIVA', 'gw_level'),
+    usage: getStr('anvandning', 'Anvandning', 'ANVANDNING', 'usage'),
   };
 }

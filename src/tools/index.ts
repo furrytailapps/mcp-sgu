@@ -20,6 +20,11 @@ import {
   getGroundwaterVulnerabilityAtPointTool,
   getGroundwaterVulnerabilityAtPointHandler,
 } from './get-groundwater-vulnerability-at-point';
+import { getRadonRiskAtPointTool, getRadonRiskAtPointHandler } from './get-radon-risk-at-point';
+import { getWellAtPointTool, getWellAtPointHandler } from './get-well-at-point';
+// Construction materials tools
+import { getGravelDepositsMapTool, getGravelDepositsMapHandler } from './get-gravel-deposits-map';
+import { getRockDepositsMapTool, getRockDepositsMapHandler } from './get-rock-deposits-map';
 
 // Tool registry: all tools must be added here
 const tools = [
@@ -41,6 +46,11 @@ const tools = [
   { definition: getGroundwaterAtPointTool, handler: getGroundwaterAtPointHandler },
   { definition: getLandslideAtPointTool, handler: getLandslideAtPointHandler },
   { definition: getGroundwaterVulnerabilityAtPointTool, handler: getGroundwaterVulnerabilityAtPointHandler },
+  { definition: getRadonRiskAtPointTool, handler: getRadonRiskAtPointHandler },
+  { definition: getWellAtPointTool, handler: getWellAtPointHandler },
+  // Construction materials tools
+  { definition: getGravelDepositsMapTool, handler: getGravelDepositsMapHandler },
+  { definition: getRockDepositsMapTool, handler: getRockDepositsMapHandler },
 ];
 
 /**

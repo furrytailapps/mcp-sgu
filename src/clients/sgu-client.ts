@@ -17,18 +17,24 @@ import {
   SguGroundwaterInfoResponse,
   SguLandslideInfoResponse,
   SguGroundwaterVulnerabilityInfoResponse,
+  SguRadonRiskInfoResponse,
+  SguWellPointInfoResponse,
   BedrockInfo,
   SoilDepthInfo,
   BoulderCoverageInfo,
   GroundwaterInfo,
   LandslideInfo,
   GroundwaterVulnerabilityInfo,
+  RadonRiskInfo,
+  WellPointInfo,
   transformBedrockInfo,
   transformSoilDepthInfo,
   transformBoulderCoverageInfo,
   transformGroundwaterInfo,
   transformLandslideInfo,
   transformGroundwaterVulnerabilityInfo,
+  transformRadonRiskInfo,
+  transformWellPointInfo,
 } from '@/types/sgu-api';
 
 // ============================================================================
@@ -40,9 +46,10 @@ const SGU_OGC_BEDROCK_URL = 'https://api.sgu.se/oppnadata/berggrund50k-250k/ogc/
 const SGU_WMS_BEDROCK_URL = 'https://maps3.sgu.se/geoserver/berg/ows';
 const SGU_WMS_SOIL_TYPES_URL = 'https://maps3.sgu.se/geoserver/jord/ows';
 const SGU_WMS_GROUNDWATER_URL = 'https://maps3.sgu.se/geoserver/ows';
-// Legacy resource.sgu.se WMS endpoints
+// Legacy resource.sgu.se WMS endpoints (support both GetMap and GetFeatureInfo with qualified layer names)
 const SGU_WMS_GAMMA_URL = 'https://resource.sgu.se/service/wms/130/flyggeofysik-gammastralning-uran';
 const SGU_WMS_WELLS_URL = 'https://resource.sgu.se/service/wms/130/brunnar';
+const SGU_WMS_BALLAST_URL = 'https://resource.sgu.se/service/wms/130/ballast';
 
 // ============================================================================
 // Client instances
@@ -68,6 +75,7 @@ const groundwaterWmsClient = createWmsClient({
   timeout: 30000,
 });
 
+// Legacy resource.sgu.se clients (use WMS 1.3.0 - server auto-upgrades 1.1.1 requests)
 const gammaWmsClient = createWmsClient({
   baseUrl: SGU_WMS_GAMMA_URL,
   timeout: 30000,
@@ -75,6 +83,11 @@ const gammaWmsClient = createWmsClient({
 
 const wellsWmsClient = createWmsClient({
   baseUrl: SGU_WMS_WELLS_URL,
+  timeout: 30000,
+});
+
+const ballastWmsClient = createWmsClient({
+  baseUrl: SGU_WMS_BALLAST_URL,
   timeout: 30000,
 });
 
@@ -88,11 +101,14 @@ const BOULDER_COVERAGE_LAYERS = ['SE.GOV.SGU.JORD.BLOCKIGHET.25K'];
 const SOIL_DEPTH_LAYERS = ['SE.GOV.SGU.JORD.JORDDJUP.50K'];
 const GROUNDWATER_LAYERS = ['SE.GOV.SGU.HMAG.GRUNDVATTENMAGASIN_J1.V2'];
 const LANDSLIDE_LAYERS = ['SE.GOV.SGU.JORD.SKRED'];
-// Legacy layers (resource.sgu.se uses simple layer names)
+// Legacy layers (resource.sgu.se uses simple layer names for both GetMap and GetFeatureInfo)
 const RADON_RISK_LAYERS = ['Uran'];
 const WELLS_LAYERS = ['Brunnar'];
 // Groundwater vulnerability (on maps3.sgu.se)
 const GROUNDWATER_VULNERABILITY_LAYERS = ['SE.GOV.SGU.GRUNDVATTEN.SARBARHET_3KL'];
+// Construction materials/ballast (on resource.sgu.se)
+const GRAVEL_DEPOSITS_LAYERS = ['SE.GOV.SGU.BALLAST.GRUSFOREKOMSTER'];
+const ROCK_DEPOSITS_LAYERS = ['SE.GOV.SGU.BALLAST.BERGFOREKOMSTER'];
 
 // ============================================================================
 // Cached legend URLs (static, only depend on layer name)
@@ -108,6 +124,8 @@ const LEGEND_URLS = {
   radonRisk: `${SGU_WMS_GAMMA_URL}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=${RADON_RISK_LAYERS[0]}&FORMAT=image%2Fpng`,
   wells: `${SGU_WMS_WELLS_URL}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=${WELLS_LAYERS[0]}&FORMAT=image%2Fpng`,
   groundwaterVulnerability: `${SGU_WMS_GROUNDWATER_URL}?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetLegendGraphic&LAYER=${GROUNDWATER_VULNERABILITY_LAYERS[0]}&FORMAT=image%2Fpng`,
+  gravelDeposits: `${SGU_WMS_BALLAST_URL}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=${GRAVEL_DEPOSITS_LAYERS[0]}&FORMAT=image%2Fpng`,
+  rockDeposits: `${SGU_WMS_BALLAST_URL}?SERVICE=WMS&VERSION=1.1.1&REQUEST=GetLegendGraphic&LAYER=${ROCK_DEPOSITS_LAYERS[0]}&FORMAT=image%2Fpng`,
 } as const;
 
 // ============================================================================
@@ -316,6 +334,12 @@ export const sguClient = {
     'groundwaterVulnerability',
   ),
 
+  /** Get a gravel deposits map URL (shows sand and gravel occurrences for construction materials) */
+  getGravelDepositsMapUrl: createMapUrlMethod(ballastWmsClient, GRAVEL_DEPOSITS_LAYERS, 'gravelDeposits'),
+
+  /** Get a rock deposits map URL (shows rock occurrences for construction materials) */
+  getRockDepositsMapUrl: createMapUrlMethod(ballastWmsClient, ROCK_DEPOSITS_LAYERS, 'rockDeposits'),
+
   // ==========================================================================
   // Point Query Methods (WMS GetFeatureInfo)
   // ==========================================================================
@@ -360,5 +384,19 @@ export const sguClient = {
     groundwaterWmsClient,
     GROUNDWATER_VULNERABILITY_LAYERS,
     transformGroundwaterVulnerabilityInfo,
+  ),
+
+  /** Get radon risk info at a specific point (gamma radiation/uranium as proxy) */
+  getRadonRiskAt: createPointQueryMethod<SguRadonRiskInfoResponse, RadonRiskInfo>(
+    gammaWmsClient,
+    RADON_RISK_LAYERS,
+    transformRadonRiskInfo,
+  ),
+
+  /** Get well/borehole info at a specific point */
+  getWellAt: createPointQueryMethod<SguWellPointInfoResponse, WellPointInfo>(
+    wellsWmsClient,
+    WELLS_LAYERS,
+    transformWellPointInfo,
   ),
 };
