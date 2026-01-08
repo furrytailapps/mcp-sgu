@@ -23,14 +23,7 @@ export const getBedrockInputSchema = {
   coordinates: coordinatesSchema,
   bufferMeters: bufferMetersSchema,
   // Bedrock-specific parameters
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(1000)
-    .default(100)
-    .optional()
-    .describe('Maximum number of features to return (1-1000, default: 100)'),
+  limit: z.number().optional().describe('Max features to return (1-1000, default: 100)'),
 };
 
 export const getBedrockTool = {

@@ -34,42 +34,21 @@ export const maxYSchema = z
 export const coordinatesSchema = z
   .array(
     z.object({
-      x: z.number().describe('Easting coordinate (SWEREF99TM, EPSG:3006)'),
-      y: z.number().describe('Northing coordinate (SWEREF99TM)'),
+      x: z.number(),
+      y: z.number(),
     }),
   )
-  .min(2)
   .optional()
-  .describe('Array of coordinate points defining a corridor centerline. Use with bufferMeters for corridor mode.');
+  .describe('Corridor centerline points [{x, y}, ...]. Requires 2+ points. Use with bufferMeters.');
 
-export const bufferMetersSchema = z
-  .number()
-  .min(1)
-  .max(10000)
-  .default(500)
-  .optional()
-  .describe('Buffer distance in meters on each side of the corridor line (default: 500m)');
+export const bufferMetersSchema = z.number().optional().describe('Corridor buffer in meters (1-10000, default: 500)');
 
 // Image parameters
-export const widthSchema = z
-  .number()
-  .int()
-  .min(100)
-  .max(4096)
-  .default(800)
-  .optional()
-  .describe('Image width in pixels (default: 800)');
+export const widthSchema = z.number().optional().describe('Image width in pixels (100-4096, default: 800)');
 
-export const heightSchema = z
-  .number()
-  .int()
-  .min(100)
-  .max(4096)
-  .default(600)
-  .optional()
-  .describe('Image height in pixels (default: 600)');
+export const heightSchema = z.number().optional().describe('Image height in pixels (100-4096, default: 600)');
 
-export const formatSchema = z.enum(['png', 'jpeg']).default('png').optional().describe('Image format (default: png)');
+export const formatSchema = z.enum(['png', 'jpeg']).optional().describe('Image format (default: png)');
 
 /**
  * Complete schema object for map tool inputs (flat parameters)
