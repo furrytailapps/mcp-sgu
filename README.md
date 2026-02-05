@@ -39,7 +39,7 @@ Add to your Claude Desktop configuration:
 {
   "mcpServers": {
     "sgu": {
-      "url": "https://sgu-mcp.vercel.app/mcp"
+      "url": "https://mcp-sgu.vercel.app/mcp"
     }
   }
 }

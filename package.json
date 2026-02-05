@@ -5,7 +5,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/furrytailapps/sgu-mcp.git"
+    "url": "https://github.com/furrytailapps/mcp-sgu.git"
   },
   "keywords": [
     "mcp",
@@ -19,9 +19,9 @@
   ],
   "author": "Yesper",
   "bugs": {
-    "url": "https://github.com/furrytailapps/sgu-mcp/issues"
+    "url": "https://github.com/furrytailapps/mcp-sgu/issues"
   },
-  "homepage": "https://github.com/furrytailapps/sgu-mcp",
+  "homepage": "https://github.com/furrytailapps/mcp-sgu",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
