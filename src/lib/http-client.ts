@@ -38,7 +38,7 @@ export function createHttpClient(config: HttpClientConfig) {
     const url = new URL(urlString);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
+        if (value !== undefined && value !== '') {
           url.searchParams.set(key, String(value));
         }
       });
