@@ -7,7 +7,7 @@ MCP server wrapping Sveriges Geologiska Undersökning (SGU) APIs for geological 
 ## Production URL
 
 ```
-https://sgu-mcp.vercel.app/mcp
+https://mcp-sgu.vercel.app/mcp
 ```
 
 ## Available Tools (<!-- AUTO:tool_count -->4<!-- /AUTO -->)
