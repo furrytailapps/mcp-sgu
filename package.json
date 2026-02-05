@@ -1,5 +1,5 @@
 {
-  "name": "sgu-mcp",
+  "name": "mcp-sgu",
   "version": "1.0.0",
   "description": "MCP server wrapping SGU (Sveriges Geologiska Undersökning) APIs for geological data in Sweden",
   "type": "module",
