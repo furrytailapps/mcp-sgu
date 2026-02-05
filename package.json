@@ -30,9 +30,12 @@
     "typecheck": "tsc --noEmit",
     "prettier": "prettier --check .",
     "prettier:fix": "prettier --write .",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "predeploy": "./scripts/predeploy.sh",
+    "test": "node tests/basic.cjs",
+    "test:all": "node tests/comprehensive.cjs",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
+    "test:unit:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
