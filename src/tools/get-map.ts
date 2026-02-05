@@ -41,16 +41,16 @@ export const getMapInputSchema = {
         'gravel_deposits, ' +
         'rock_deposits (construction materials)',
     ),
-  // Bbox mode parameters
-  minX: z.number().optional().describe('Bbox min X (SWEREF99TM). Stockholm ~670000'),
-  minY: z.number().optional().describe('Bbox min Y. Stockholm ~6575000'),
-  maxX: z.number().optional().describe('Bbox max X'),
-  maxY: z.number().optional().describe('Bbox max Y'),
-  // Corridor mode parameters
+  // Bbox mode parameters (WGS84)
+  minLat: z.number().optional().describe('Bbox min latitude (WGS84). Stockholm ~59.3'),
+  minLon: z.number().optional().describe('Bbox min longitude (WGS84). Stockholm ~18.0'),
+  maxLat: z.number().optional().describe('Bbox max latitude (WGS84)'),
+  maxLon: z.number().optional().describe('Bbox max longitude (WGS84)'),
+  // Corridor mode parameters (WGS84)
   coordinates: z
-    .array(z.object({ x: z.number(), y: z.number() }))
+    .array(z.object({ latitude: z.number(), longitude: z.number() }))
     .optional()
-    .describe('Corridor centerline [{x,y},...]. Alternative to bbox.'),
+    .describe('Corridor centerline [{latitude, longitude},...]. Alternative to bbox.'),
   bufferMeters: z.number().optional().describe('Corridor buffer in meters (default: 500)'),
   // Image parameters
   width: z.number().optional().describe('Image width px (default: 800)'),
@@ -62,19 +62,19 @@ export const getMapTool = {
   name: 'sgu_get_map',
   description:
     'Generate a geological map image URL for an area in Sweden. ' +
-    'Provide bbox (minX, minY, maxX, maxY) OR corridor (coordinates + bufferMeters). ' +
-    'Coordinates in SWEREF99TM (EPSG:3006). ' +
+    'Provide bbox (minLat, minLon, maxLat, maxLon) OR corridor (coordinates + bufferMeters). ' +
+    'Coordinates in WGS84 (latitude/longitude). ' +
     'Returns map image URL and legend URL.',
   inputSchema: getMapInputSchema,
 };
 
 type GetMapInput = {
   layer: MapLayer;
-  minX?: number;
-  minY?: number;
-  maxX?: number;
-  maxY?: number;
-  coordinates?: { x: number; y: number }[];
+  minLat?: number;
+  minLon?: number;
+  maxLat?: number;
+  maxLon?: number;
+  coordinates?: { latitude: number; longitude: number }[];
   bufferMeters?: number;
   width?: number;
   height?: number;
@@ -99,7 +99,7 @@ const MAP_METHODS: Record<MapLayer, (bbox: BoundingBox, options: MapOptions) => 
 };
 
 export const getMapHandler = withErrorHandling(async (args: GetMapInput) => {
-  // Process input to get bounding box (handles both bbox and corridor modes)
+  // Process input to get bounding box (handles both bbox and corridor modes, converts WGS84 to SWEREF99TM)
   const bbox = processMapToolInput(args);
 
   // Get the appropriate map method

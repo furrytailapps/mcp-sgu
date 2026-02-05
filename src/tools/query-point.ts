@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { sguClient } from '@/clients/sgu-client';
 import { withErrorHandling } from '@/lib/response';
-import { validatePoint, CRS_SWEREF99TM } from '@/lib/geometry-utils';
+import { wgs84ToSweref99, CRS_WGS84 } from '@/lib/coordinates';
 
 /**
  * Data types available for point queries
@@ -21,8 +21,8 @@ const DATA_TYPES = [
 type DataType = (typeof DATA_TYPES)[number];
 
 export const queryPointInputSchema = {
-  x: z.number().describe('X coordinate (Easting in SWEREF99TM). Stockholm ~674000, Gothenburg ~319000, Malmo ~374000'),
-  y: z.number().describe('Y coordinate (Northing in SWEREF99TM). Stockholm ~6580000, Gothenburg ~6400000, Malmo ~6164000'),
+  latitude: z.number().describe('Latitude (WGS84). Stockholm ~59.33, Gothenburg ~57.71, Malmo ~55.61'),
+  longitude: z.number().describe('Longitude (WGS84). Stockholm ~18.07, Gothenburg ~11.97, Malmo ~13.00'),
   dataType: z
     .enum(DATA_TYPES)
     .describe(
@@ -44,14 +44,14 @@ export const queryPointTool = {
   description:
     'Query geological data at a specific coordinate in Sweden. ' +
     'Returns detailed information based on dataType. ' +
-    'Coordinates in SWEREF99TM (EPSG:3006). ' +
+    'Coordinates in WGS84 (latitude/longitude). ' +
     'Essential for site-specific construction and infrastructure planning.',
   inputSchema: queryPointInputSchema,
 };
 
 type QueryPointInput = {
-  x: number;
-  y: number;
+  latitude: number;
+  longitude: number;
   dataType: DataType;
 };
 
@@ -71,18 +71,16 @@ const QUERY_CONFIG: Record<DataType, { method: (point: { x: number; y: number })
 };
 
 export const queryPointHandler = withErrorHandling(async (args: QueryPointInput) => {
-  const point = { x: args.x, y: args.y };
-
-  // Validate the point coordinates
-  validatePoint(point);
+  // Convert WGS84 to SWEREF99TM for upstream API
+  const sweref99Point = wgs84ToSweref99({ latitude: args.latitude, longitude: args.longitude });
 
   // Get the appropriate query method and response key
   const config = QUERY_CONFIG[args.dataType];
-  const data = await config.method(point);
+  const data = await config.method(sweref99Point);
 
   return {
-    coordinate_system: CRS_SWEREF99TM,
-    coordinates: { x: args.x, y: args.y },
+    coordinate_system: CRS_WGS84,
+    coordinates: { latitude: args.latitude, longitude: args.longitude },
     data_type: args.dataType,
     found: data !== null,
     [config.key]: data,

@@ -38,12 +38,14 @@
     "@modelcontextprotocol/sdk": "^1.25.2",
     "mcp-handler": "^1.0.5",
     "next": "^15.0.0",
+    "proj4": "^2.20.2",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/proj4": "^2.5.6",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@vitest/coverage-v8": "^4.0.16",

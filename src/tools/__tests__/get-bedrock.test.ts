@@ -46,53 +46,70 @@ describe('get-bedrock tool', () => {
       expect(getBedrockTool.description).toContain('geology');
     });
 
-    it('should have flat bbox and corridor params in input schema', () => {
-      expect(getBedrockInputSchema.minX).toBeDefined();
-      expect(getBedrockInputSchema.minY).toBeDefined();
-      expect(getBedrockInputSchema.maxX).toBeDefined();
-      expect(getBedrockInputSchema.maxY).toBeDefined();
+    it('should have flat WGS84 bbox and corridor params in input schema', () => {
+      expect(getBedrockInputSchema.minLat).toBeDefined();
+      expect(getBedrockInputSchema.minLon).toBeDefined();
+      expect(getBedrockInputSchema.maxLat).toBeDefined();
+      expect(getBedrockInputSchema.maxLon).toBeDefined();
       expect(getBedrockInputSchema.coordinates).toBeDefined();
       expect(getBedrockInputSchema.bufferMeters).toBeDefined();
       expect(getBedrockInputSchema.limit).toBeDefined();
     });
   });
 
-  describe('handler with bbox', () => {
-    it('should return bedrock features for valid bbox', async () => {
+  describe('handler with bbox (WGS84)', () => {
+    it('should return bedrock features for valid WGS84 bbox', async () => {
+      // Stockholm area in WGS84
       const response = await getBedrockHandler({
-        minX: 670000,
-        minY: 6570000,
-        maxX: 680000,
-        maxY: 6590000,
+        minLat: 59.25,
+        minLon: 17.95,
+        maxLat: 59.35,
+        maxLon: 18.15,
       });
 
       expect(response.isError).toBeUndefined();
       const data = JSON.parse(response.content[0].text);
-      expect(data.coordinate_system).toBe('EPSG:3006');
+      expect(data.input_coordinate_system).toBe('EPSG:4326');
+      expect(data.internal_coordinate_system).toBe('EPSG:3006');
       expect(data.count).toBeGreaterThan(0);
       expect(Array.isArray(data.features)).toBe(true);
     });
 
-    it('should validate bbox coordinates', async () => {
+    it('should validate WGS84 bbox coordinates', async () => {
       vi.spyOn(console, 'error').mockImplementation(() => {});
 
+      // Invalid: maxLat < minLat
       const response = await getBedrockHandler({
-        minX: 680000,
-        minY: 6570000,
-        maxX: 670000, // Invalid: maxX < minX
-        maxY: 6590000,
+        minLat: 59.35,
+        minLon: 17.95,
+        maxLat: 59.25,
+        maxLon: 18.15,
+      });
+
+      expect(response.isError).toBe(true);
+    });
+
+    it('should reject coordinates outside Sweden', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+
+      // Paris coordinates (outside Sweden)
+      const response = await getBedrockHandler({
+        minLat: 48.8,
+        minLon: 2.3,
+        maxLat: 48.9,
+        maxLon: 2.4,
       });
 
       expect(response.isError).toBe(true);
     });
   });
 
-  describe('handler with corridor', () => {
-    it('should accept corridor input', async () => {
+  describe('handler with corridor (WGS84)', () => {
+    it('should accept WGS84 corridor input', async () => {
       const response = await getBedrockHandler({
         coordinates: [
-          { x: 670000, y: 6570000 },
-          { x: 680000, y: 6580000 },
+          { latitude: 59.3, longitude: 18.0 },
+          { latitude: 59.35, longitude: 18.1 },
         ],
         bufferMeters: 500,
       });
@@ -114,10 +131,10 @@ describe('get-bedrock tool', () => {
 
     it('should apply default limit', async () => {
       const response = await getBedrockHandler({
-        minX: 670000,
-        minY: 6570000,
-        maxX: 680000,
-        maxY: 6590000,
+        minLat: 59.25,
+        minLon: 17.95,
+        maxLat: 59.35,
+        maxLon: 18.15,
       });
 
       expect(response.isError).toBeUndefined();
