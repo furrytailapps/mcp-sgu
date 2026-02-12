@@ -61,7 +61,11 @@ export function createHttpClient(config: HttpClientConfig) {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        throw new UpstreamApiError(`API request failed: ${response.status} ${response.statusText}`, response.status, baseUrl);
+        const msg =
+          response.status >= 500
+            ? `The data service returned an error (HTTP ${response.status}). This is usually temporary — try again.`
+            : `The data service rejected the request (HTTP ${response.status}). The query parameters may be invalid.`;
+        throw new UpstreamApiError(msg, response.status, baseUrl);
       }
 
       // Handle text responses (like WKT or XML)
@@ -80,10 +84,14 @@ export function createHttpClient(config: HttpClientConfig) {
       if (error instanceof UpstreamApiError) throw error;
 
       if (error instanceof Error && error.name === 'AbortError') {
-        throw new UpstreamApiError(`Request timeout after ${timeout}ms`, 0, baseUrl);
+        throw new UpstreamApiError(
+          'The request timed out. The data service may be slow — try again or use a smaller search area.',
+          0,
+          baseUrl,
+        );
       }
 
-      throw new UpstreamApiError(`Network error: ${error instanceof Error ? error.message : 'Unknown'}`, 0, baseUrl);
+      throw new UpstreamApiError('Could not connect to the data service. This is usually temporary — try again.', 0, baseUrl);
     }
   }
 

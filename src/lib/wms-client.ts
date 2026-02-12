@@ -130,7 +130,7 @@ export function createWmsClient(config: WmsClientConfig) {
         throw error;
       }
       throw new UpstreamApiError(
-        `WMS GetFeatureInfo failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'Failed to query geological data at this location. The data service may be temporarily unavailable — try again.',
         0,
         config.baseUrl,
       );

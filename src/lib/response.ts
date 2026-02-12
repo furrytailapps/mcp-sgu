@@ -1,5 +1,18 @@
 import type { McpToolError } from './errors';
 
+const INTERNAL_DETAIL_KEYS = new Set(['statusCode', 'upstream']);
+
+function filterDetails(details?: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (!details) return undefined;
+  const filtered: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(details)) {
+    if (!INTERNAL_DETAIL_KEYS.has(key)) {
+      filtered[key] = value;
+    }
+  }
+  return Object.keys(filtered).length > 0 ? filtered : undefined;
+}
+
 type TextContent = {
   type: 'text';
   text: string;
@@ -34,7 +47,7 @@ export function errorResponse(error: McpToolError | Error): ToolResponse {
     error: true,
     code: isMcpError ? (error as McpToolError).code : 'INTERNAL_ERROR',
     message: error.message,
-    ...(isMcpError && { details: (error as McpToolError).details }),
+    ...(isMcpError && { details: filterDetails((error as McpToolError).details) }),
   };
 
   return {

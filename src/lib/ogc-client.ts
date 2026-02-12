@@ -72,7 +72,7 @@ export function createOgcClient(config: OgcClientConfig) {
         throw error;
       }
       throw new UpstreamApiError(
-        `Failed to fetch from OGC collection ${collection}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'Failed to fetch bedrock features for this area. The data service may be temporarily unavailable — try again.',
         0,
         config.baseUrl,
       );
