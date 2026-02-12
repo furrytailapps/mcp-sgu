@@ -39,7 +39,7 @@ async function testMCP(method, params = {}) {
     headers: {
       'Content-Type': 'application/json',
       'Content-Length': Buffer.byteLength(data),
-      Accept: 'application/json, text/event-stream',
+      'Accept': 'application/json, text/event-stream',
     },
   };
 
