@@ -56,25 +56,14 @@ src/
 
 ## Coordinate System
 
-**Input:** WGS84 (EPSG:4326) - latitude/longitude
-**Internal:** SWEREF99TM (EPSG:3006) - converted automatically
-
-### WGS84 Input Examples
-
-| City       | latitude | longitude |
-| ---------- | -------- | --------- |
-| Stockholm  | 59.33    | 18.07     |
-| Gothenburg | 57.71    | 11.97     |
-| Malmo      | 55.61    | 13.00     |
-| Kiruna     | 67.86    | 20.23     |
-
-**Valid range for Sweden:** 55-69°N, 11-24°E
+**Input:** WGS84 (EPSG:4326) — latitude/longitude
+**Internal:** SWEREF99TM (EPSG:3006) — converted automatically
+**Valid range:** 55-69N, 11-24E. City examples: see parent CLAUDE.md (Coordinate System table).
 
 ## Development
 
 ```bash
-npm run dev          # Start dev server (localhost:3000)
-npm run typecheck    # Type check
-npm run lint         # Lint
-npm run prettier:fix # Format code
+npm run dev   # Start dev server (localhost:3000)
 ```
+
+Quality commands (typecheck, lint, prettier:fix): see parent CLAUDE.md (Code Quality section).
