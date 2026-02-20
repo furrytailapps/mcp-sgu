@@ -5,9 +5,6 @@ import { processMapToolInput } from '@/lib/map-tool-handler';
 import { BoundingBox } from '@/lib/geometry-utils';
 import { MapResponse, MapOptions } from '@/types/sgu-api';
 
-/**
- * Available map layers
- */
 const MAP_LAYERS = [
   'bedrock',
   'soil_types',
@@ -81,9 +78,6 @@ type GetMapInput = {
   format?: 'png' | 'jpeg';
 };
 
-/**
- * Map layer names to their client methods
- */
 const MAP_METHODS: Record<MapLayer, (bbox: BoundingBox, options: MapOptions) => MapResponse> = {
   bedrock: sguClient.getBedrockMapUrl,
   soil_types: sguClient.getSoilTypesMapUrl,
@@ -99,13 +93,8 @@ const MAP_METHODS: Record<MapLayer, (bbox: BoundingBox, options: MapOptions) => 
 };
 
 export const getMapHandler = withErrorHandling(async (args: GetMapInput) => {
-  // Process input to get bounding box (handles both bbox and corridor modes, converts WGS84 to SWEREF99TM)
   const bbox = processMapToolInput(args);
-
-  // Get the appropriate map method
   const getMapUrl = MAP_METHODS[args.layer];
-
-  // Generate map URLs
   const mapResponse = getMapUrl(bbox, {
     width: args.width,
     height: args.height,

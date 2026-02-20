@@ -2,9 +2,6 @@ import { createHttpClient } from './http-client';
 import { UpstreamApiError } from './errors';
 import { BoundingBox, bboxToString, CRS_SWEREF99TM } from './geometry-utils';
 
-/**
- * OGC API Features response structure
- */
 interface OgcFeaturesResponse<T> {
   type: 'FeatureCollection';
   features: T[];
@@ -27,9 +24,6 @@ interface QueryOptions {
   crs?: string;
 }
 
-/**
- * Create an OGC API Features client
- */
 export function createOgcClient(config: OgcClientConfig) {
   const client = createHttpClient({
     baseUrl: config.baseUrl,
@@ -39,10 +33,7 @@ export function createOgcClient(config: OgcClientConfig) {
     },
   });
 
-  /**
-   * Get items from a collection with optional spatial filter
-   * Supports bbox or polygon WKT filter (polygon takes precedence)
-   */
+  // Supports bbox or polygon WKT filter (polygon takes precedence)
   async function getItems<T>(collection: string, options: QueryOptions = {}): Promise<T[]> {
     const { bbox, polygonWkt, limit = 100, offset, crs = CRS_SWEREF99TM } = options;
 
@@ -54,9 +45,7 @@ export function createOgcClient(config: OgcClientConfig) {
       'bbox-crs': crs,
     };
 
-    // Polygon filter takes precedence over bbox
     if (polygonWkt) {
-      // Use CQL filter for polygon intersection
       params.filter = `INTERSECTS(geom,${polygonWkt})`;
       params['filter-lang'] = 'cql-text';
       params['filter-crs'] = crs;
@@ -79,9 +68,6 @@ export function createOgcClient(config: OgcClientConfig) {
     }
   }
 
-  /**
-   * Get collections available at this endpoint
-   */
   async function getCollections(): Promise<{ id: string; title: string; description?: string }[]> {
     const response = await client.request<{
       collections: Array<{ id: string; title: string; description?: string }>;
@@ -89,9 +75,6 @@ export function createOgcClient(config: OgcClientConfig) {
     return response.collections;
   }
 
-  /**
-   * Get a single feature by ID
-   */
   async function getFeature<T>(collection: string, featureId: string): Promise<T> {
     return client.request<T>(`collections/${collection}/items/${featureId}`);
   }

@@ -1,8 +1,5 @@
 import { withErrorHandling } from '@/lib/response';
 
-/**
- * Layer descriptions for SGU geological data
- */
 const LAYER_DESCRIPTIONS = {
   // Point query layers
   point_query: {

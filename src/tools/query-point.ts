@@ -3,9 +3,6 @@ import { sguClient } from '@/clients/sgu-client';
 import { withErrorHandling } from '@/lib/response';
 import { wgs84ToSweref99, CRS_WGS84 } from '@/lib/coordinates';
 
-/**
- * Data types available for point queries
- */
 const DATA_TYPES = [
   'bedrock',
   'soil_type',
@@ -55,9 +52,6 @@ type QueryPointInput = {
   dataType: DataType;
 };
 
-/**
- * Map data types to their client methods and response property names
- */
 const QUERY_CONFIG: Record<DataType, { method: (point: { x: number; y: number }) => Promise<unknown>; key: string }> = {
   bedrock: { method: sguClient.getBedrockAt, key: 'bedrock' },
   soil_type: { method: sguClient.getSoilTypeAt, key: 'soil_type' },
@@ -71,10 +65,7 @@ const QUERY_CONFIG: Record<DataType, { method: (point: { x: number; y: number })
 };
 
 export const queryPointHandler = withErrorHandling(async (args: QueryPointInput) => {
-  // Convert WGS84 to SWEREF99TM for upstream API
   const sweref99Point = wgs84ToSweref99({ latitude: args.latitude, longitude: args.longitude });
-
-  // Get the appropriate query method and response key
   const config = QUERY_CONFIG[args.dataType];
   const data = await config.method(sweref99Point);
 

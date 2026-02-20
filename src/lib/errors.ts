@@ -13,9 +13,6 @@ export class McpToolError extends Error {
   }
 }
 
-/**
- * Error for upstream API failures
- */
 export class UpstreamApiError extends McpToolError {
   constructor(
     message: string,
@@ -28,9 +25,6 @@ export class UpstreamApiError extends McpToolError {
   }
 }
 
-/**
- * Error for resource not found
- */
 export class NotFoundError extends McpToolError {
   constructor(resourceType: string, identifier: string) {
     super(`${resourceType} not found: ${identifier}`, 'NOT_FOUND', { resourceType, identifier });
@@ -38,9 +32,6 @@ export class NotFoundError extends McpToolError {
   }
 }
 
-/**
- * Error for validation failures
- */
 export class ValidationError extends McpToolError {
   constructor(message: string, field?: string) {
     super(message, 'VALIDATION_ERROR', { field });

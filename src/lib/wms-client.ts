@@ -29,9 +29,6 @@ interface GetFeatureInfoOptions {
   crs?: string;
 }
 
-/**
- * Create a WMS client
- */
 export function createWmsClient(config: WmsClientConfig) {
   const client = createHttpClient({
     baseUrl: config.baseUrl,
@@ -39,9 +36,6 @@ export function createWmsClient(config: WmsClientConfig) {
   });
   const wmsVersion = config.version ?? '1.3.0';
 
-  /**
-   * Build a WMS GetMap URL (returns URL string, doesn't fetch the image)
-   */
   function getMapUrl(options: GetMapOptions): string {
     const { layers, bbox, width = 800, height = 600, format = 'image/png', crs = CRS_SWEREF99TM, transparent = true } = options;
 
@@ -73,9 +67,6 @@ export function createWmsClient(config: WmsClientConfig) {
     return `${baseUrl}?${params.toString()}`;
   }
 
-  /**
-   * Build a WMS GetLegendGraphic URL
-   */
   function getLegendUrl(layer: string, format: string = 'image/png'): string {
     const params = new URLSearchParams({
       SERVICE: 'WMS',
@@ -89,9 +80,6 @@ export function createWmsClient(config: WmsClientConfig) {
     return `${baseUrl}?${params.toString()}`;
   }
 
-  /**
-   * Perform a GetFeatureInfo request
-   */
   async function getFeatureInfo<T>(options: GetFeatureInfoOptions): Promise<T> {
     const { layers, bbox, width, height, x, y, infoFormat = 'application/json', crs = CRS_SWEREF99TM } = options;
 
@@ -137,9 +125,6 @@ export function createWmsClient(config: WmsClientConfig) {
     }
   }
 
-  /**
-   * Get WMS capabilities (for discovering available layers)
-   */
   async function getCapabilities(): Promise<string> {
     const params: Record<string, string> = {
       SERVICE: 'WMS',

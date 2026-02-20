@@ -55,9 +55,6 @@ export const heightSchema = z.number().optional().describe('Image height in pixe
 
 export const formatSchema = z.enum(['png', 'jpeg']).optional().describe('Image format (default: png)');
 
-/**
- * Complete schema object for map tool inputs (flat parameters, WGS84)
- */
 export const mapToolInputSchema = {
   // Bbox mode parameters (WGS84)
   minLat: minLatSchema,
@@ -73,9 +70,6 @@ export const mapToolInputSchema = {
   format: formatSchema,
 };
 
-/**
- * TypeScript type for map tool inputs (flat structure, WGS84)
- */
 export type MapToolInput = {
   // Bbox mode (WGS84)
   minLat?: number;

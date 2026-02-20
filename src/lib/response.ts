@@ -24,9 +24,6 @@ interface ToolResponse {
   isError?: boolean;
 }
 
-/**
- * Build a successful tool response with JSON data
- */
 export function successResponse(data: unknown): ToolResponse {
   return {
     content: [
@@ -38,9 +35,6 @@ export function successResponse(data: unknown): ToolResponse {
   };
 }
 
-/**
- * Build an error response that AI can understand
- */
 export function errorResponse(error: McpToolError | Error): ToolResponse {
   const isMcpError = error instanceof Error && 'code' in error;
   const errorData = {
@@ -61,9 +55,6 @@ export function errorResponse(error: McpToolError | Error): ToolResponse {
   };
 }
 
-/**
- * Wrap a tool handler with standard error handling
- */
 export function withErrorHandling<T, R>(handler: (args: T) => Promise<R>): (args: T) => Promise<ToolResponse> {
   return async (args: T) => {
     try {

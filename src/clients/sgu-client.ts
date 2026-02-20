@@ -132,10 +132,6 @@ const LEGEND_URLS = {
 // Helper Functions
 // ============================================================================
 
-/**
- * Build a MapResponse object
- * Reduces duplication across all map URL methods
- */
 function buildMapResponse(mapUrl: string, legendUrl: string, bbox: BoundingBox, layers: string[]): MapResponse {
   return {
     map_url: mapUrl,
@@ -151,10 +147,6 @@ function buildMapResponse(mapUrl: string, legendUrl: string, bbox: BoundingBox, 
   };
 }
 
-/**
- * Factory function to create map URL methods
- * Eliminates repetitive boilerplate across all map methods
- */
 function createMapUrlMethod(
   wmsClient: ReturnType<typeof createWmsClient>,
   layers: string[],
@@ -173,17 +165,12 @@ function createMapUrlMethod(
   };
 }
 
-/**
- * Factory function to create point query methods
- * Eliminates repetitive boilerplate across all point query methods
- */
 function createPointQueryMethod<TResponse, TResult>(
   wmsClient: ReturnType<typeof createWmsClient>,
   layers: string[],
   transform: (response: TResponse) => TResult | null,
 ): (point: Point) => Promise<TResult | null> {
   return async (point: Point): Promise<TResult | null> => {
-    // Create a small bbox around the point for GetFeatureInfo
     const buffer = 100; // 100 meter buffer
     const bbox: BoundingBox = {
       minX: point.x - buffer,
@@ -192,11 +179,8 @@ function createPointQueryMethod<TResponse, TResult>(
       maxY: point.y + buffer,
     };
 
-    // Standard image dimensions
     const width = 256;
     const height = 256;
-
-    // Calculate pixel position (center of image)
     const pixelX = Math.floor(width / 2);
     const pixelY = Math.floor(height / 2);
 
@@ -218,13 +202,7 @@ function createPointQueryMethod<TResponse, TResult>(
 // ============================================================================
 
 export const sguClient = {
-  /**
-   * Get bedrock features within a bounding box or corridor
-   * Uses the 'geologisk-enhet-yta' collection (geological unit areas)
-   *
-   * When corridor is provided, uses polygon intersection filter for precise filtering.
-   * Falls back to bbox if corridor not provided.
-   */
+  // When corridor is provided, uses polygon intersection filter; falls back to bbox otherwise
   async getBedrock(
     bbox: BoundingBox,
     limit: number = 100,
@@ -233,7 +211,6 @@ export const sguClient = {
     let polygonWkt: string | undefined;
     let usedPolygonFilter = false;
 
-    // If corridor is provided, try polygon filtering first
     if (corridor) {
       try {
         polygonWkt = corridorToWktPolygon(corridor);
@@ -270,23 +247,12 @@ export const sguClient = {
     }
   },
 
-  /** Get a bedrock map URL for a bounding box */
   getBedrockMapUrl: createMapUrlMethod(bedrockWmsClient, BEDROCK_LAYERS, 'bedrock'),
-
-  /** Get a soil types map URL for a bounding box */
   getSoilTypesMapUrl: createMapUrlMethod(soilTypesWmsClient, SOIL_TYPES_LAYERS, 'soilTypes'),
-
-  /** Get a boulder coverage map URL (shows blockiness/boulder density) */
   getBoulderCoverageMapUrl: createMapUrlMethod(soilTypesWmsClient, BOULDER_COVERAGE_LAYERS, 'boulderCoverage'),
-
-  /** Get a soil depth map URL (shows estimated depth to bedrock) */
   getSoilDepthMapUrl: createMapUrlMethod(soilTypesWmsClient, SOIL_DEPTH_LAYERS, 'soilDepth'),
 
-  /**
-   * Get soil type info at a specific point using WMS GetFeatureInfo
-   */
   async getSoilTypeAt(point: Point): Promise<SoilTypeInfo | null> {
-    // Create a small bbox around the point for the GetFeatureInfo request
     const buffer = 100; // 100 meter buffer
     const bbox: BoundingBox = {
       minX: point.x - buffer,
@@ -295,11 +261,8 @@ export const sguClient = {
       maxY: point.y + buffer,
     };
 
-    // Use standard image dimensions
     const width = 256;
     const height = 256;
-
-    // Calculate pixel position (center of image)
     const pixelX = Math.floor(width / 2);
     const pixelY = Math.floor(height / 2);
 
@@ -315,85 +278,65 @@ export const sguClient = {
     return transformSoilTypeInfo(response);
   },
 
-  /** Get a groundwater aquifers map URL (shows groundwater reservoirs in J1 soil layers) */
   getGroundwaterMapUrl: createMapUrlMethod(groundwaterWmsClient, GROUNDWATER_LAYERS, 'groundwater'),
-
-  /** Get a landslide map URL (shows historical landslide areas) */
   getLandslideMapUrl: createMapUrlMethod(soilTypesWmsClient, LANDSLIDE_LAYERS, 'landslide'),
-
-  /** Get a radon risk map URL (gamma radiation/uranium as proxy for radon) */
   getRadonRiskMapUrl: createMapUrlMethod(gammaWmsClient, RADON_RISK_LAYERS, 'radonRisk'),
-
-  /** Get a wells map URL (shows groundwater wells and boreholes) */
   getWellsMapUrl: createMapUrlMethod(wellsWmsClient, WELLS_LAYERS, 'wells'),
-
-  /** Get a groundwater vulnerability map URL (3-class vulnerability assessment) */
   getGroundwaterVulnerabilityMapUrl: createMapUrlMethod(
     groundwaterWmsClient,
     GROUNDWATER_VULNERABILITY_LAYERS,
     'groundwaterVulnerability',
   ),
 
-  /** Get a gravel deposits map URL (shows sand and gravel occurrences for construction materials) */
   getGravelDepositsMapUrl: createMapUrlMethod(ballastWmsClient, GRAVEL_DEPOSITS_LAYERS, 'gravelDeposits'),
-
-  /** Get a rock deposits map URL (shows rock occurrences for construction materials) */
   getRockDepositsMapUrl: createMapUrlMethod(ballastWmsClient, ROCK_DEPOSITS_LAYERS, 'rockDeposits'),
 
   // ==========================================================================
   // Point Query Methods (WMS GetFeatureInfo)
   // ==========================================================================
 
-  /** Get bedrock info at a specific point using WMS GetFeatureInfo */
   getBedrockAt: createPointQueryMethod<SguBedrockInfoResponse, BedrockInfo>(
     bedrockWmsClient,
     BEDROCK_LAYERS,
     transformBedrockInfo,
   ),
 
-  /** Get soil depth info at a specific point */
   getSoilDepthAt: createPointQueryMethod<SguSoilDepthInfoResponse, SoilDepthInfo>(
     soilTypesWmsClient,
     SOIL_DEPTH_LAYERS,
     transformSoilDepthInfo,
   ),
 
-  /** Get boulder coverage info at a specific point */
   getBoulderCoverageAt: createPointQueryMethod<SguBoulderCoverageInfoResponse, BoulderCoverageInfo>(
     soilTypesWmsClient,
     BOULDER_COVERAGE_LAYERS,
     transformBoulderCoverageInfo,
   ),
 
-  /** Get groundwater aquifer info at a specific point */
   getGroundwaterAt: createPointQueryMethod<SguGroundwaterInfoResponse, GroundwaterInfo>(
     groundwaterWmsClient,
     GROUNDWATER_LAYERS,
     transformGroundwaterInfo,
   ),
 
-  /** Get landslide area info at a specific point */
   getLandslideAt: createPointQueryMethod<SguLandslideInfoResponse, LandslideInfo>(
     soilTypesWmsClient,
     LANDSLIDE_LAYERS,
     transformLandslideInfo,
   ),
 
-  /** Get groundwater vulnerability info at a specific point */
   getGroundwaterVulnerabilityAt: createPointQueryMethod<SguGroundwaterVulnerabilityInfoResponse, GroundwaterVulnerabilityInfo>(
     groundwaterWmsClient,
     GROUNDWATER_VULNERABILITY_LAYERS,
     transformGroundwaterVulnerabilityInfo,
   ),
 
-  /** Get radon risk info at a specific point (gamma radiation/uranium as proxy) */
   getRadonRiskAt: createPointQueryMethod<SguRadonRiskInfoResponse, RadonRiskInfo>(
     gammaWmsClient,
     RADON_RISK_LAYERS,
     transformRadonRiskInfo,
   ),
 
-  /** Get well/borehole info at a specific point */
   getWellAt: createPointQueryMethod<SguWellPointInfoResponse, WellPointInfo>(
     wellsWmsClient,
     WELLS_LAYERS,

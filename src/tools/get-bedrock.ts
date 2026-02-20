@@ -40,16 +40,10 @@ export const getBedrockTool = {
 
 type GetBedrockInput = MapToolInput & { limit?: number };
 
-/**
- * Check if bbox parameters are provided (flat structure, WGS84)
- */
 function hasBboxParams(args: MapToolInput): boolean {
   return args.minLat !== undefined && args.minLon !== undefined && args.maxLat !== undefined && args.maxLon !== undefined;
 }
 
-/**
- * Check if corridor parameters are provided (flat structure, WGS84)
- */
 function hasCorridorParams(args: MapToolInput): boolean {
   return args.coordinates !== undefined && args.coordinates.length >= 2;
 }
@@ -58,14 +52,12 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
   const hasBbox = hasBboxParams(args);
   const hasCorridor = hasCorridorParams(args);
 
-  // Validate: at least one geometry parameter set must be provided
   if (!hasBbox && !hasCorridor) {
     throw new ValidationError(
       'Either bbox (minLat, minLon, maxLat, maxLon) or corridor (coordinates array with [{latitude, longitude}, ...]) must be provided',
     );
   }
 
-  // Build corridor object if provided (in SWEREF99TM)
   let corridor: { coordinates: { x: number; y: number }[]; bufferMeters: number } | undefined;
 
   if (hasCorridor) {
@@ -76,7 +68,6 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
     };
   }
 
-  // Determine the bounding box to use (always needed as fallback)
   let bbox: BoundingBox;
   let queryType: 'bbox' | 'corridor';
 
@@ -84,7 +75,6 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
     bbox = corridorToBoundingBox(corridor);
     queryType = 'corridor';
   } else {
-    // Convert WGS84 bbox to SWEREF99TM
     bbox = wgs84BboxToSweref99({
       minLat: args.minLat!,
       minLon: args.minLon!,
@@ -94,10 +84,7 @@ export const getBedrockHandler = withErrorHandling(async (args: GetBedrockInput)
     queryType = 'bbox';
   }
 
-  // Validate the bounding box (SWEREF99TM validation)
   validateBbox(bbox);
-
-  // Fetch bedrock data - pass corridor for polygon filtering when available
   const result = await sguClient.getBedrock(bbox, args.limit ?? 100, corridor);
 
   return {

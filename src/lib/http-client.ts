@@ -6,9 +6,6 @@ interface HttpClientConfig {
   headers?: Record<string, string>;
 }
 
-/**
- * Create a typed HTTP client for API wrapping
- */
 export function createHttpClient(config: HttpClientConfig) {
   const { baseUrl, timeout = 30000, headers = {} } = config;
 
@@ -22,14 +19,11 @@ export function createHttpClient(config: HttpClientConfig) {
   ): Promise<T> {
     const { method = 'GET', params, body } = options;
 
-    // Build URL with query params
     // Handle empty path case (common for WMS endpoints where all params are in query string)
     let urlString: string;
     if (path === '') {
-      // For empty path, use baseUrl directly without trailing slash
       urlString = baseUrl;
     } else {
-      // For non-empty paths, join with base properly
       const cleanPath = path.startsWith('/') ? path.substring(1) : path;
       const url = new URL(cleanPath, baseUrl.endsWith('/') ? baseUrl : baseUrl + '/');
       urlString = url.toString();
@@ -38,6 +32,7 @@ export function createHttpClient(config: HttpClientConfig) {
     const url = new URL(urlString);
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
+        // WORKAROUND: LLM agents pass "" for optional params
         if (value !== undefined && value !== '') {
           url.searchParams.set(key, String(value));
         }

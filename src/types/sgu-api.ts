@@ -1,7 +1,3 @@
-/**
- * Type definitions for SGU API responses and transformed data
- */
-
 // ============================================================================
 // GeoJSON types
 // ============================================================================
@@ -22,10 +18,7 @@ export interface GeoJsonFeature<P = Record<string, unknown>> {
 // Raw SGU API types (as returned by the API)
 // ============================================================================
 
-/**
- * Raw bedrock feature from SGU OGC API
- * Collection: berggrund50k250k
- */
+// Collection: berggrund50k250k
 export interface SguBedrockProperties {
   objectid: number;
   geo_enh_tx: string; // Geological unit
@@ -48,10 +41,7 @@ export interface SguBedrockProperties {
 
 export type SguBedrockFeature = GeoJsonFeature<SguBedrockProperties>;
 
-/**
- * Raw well feature from SGU OGC API
- * Collection: brunnar
- */
+// Collection: brunnar
 export interface SguWellProperties {
   obsplatsid?: string;
   brunnsid: number;
@@ -74,10 +64,7 @@ export interface SguWellProperties {
 
 export type SguWellFeature = GeoJsonFeature<SguWellProperties>;
 
-/**
- * WMS GetFeatureInfo response for soil types (jordarter)
- * Properties from SE.GOV.SGU.JORD.GRUNDLAGER.25K layer
- */
+// Layer: SE.GOV.SGU.JORD.GRUNDLAGER.25K
 export interface SguSoilTypeInfoResponse {
   type: string;
   features?: Array<{
@@ -104,9 +91,6 @@ export interface SguSoilTypeInfoResponse {
 // Transformed types (clean output for tools)
 // ============================================================================
 
-/**
- * Clean bedrock feature for tool output
- */
 export interface BedrockFeature {
   id: string;
   rock_type: string;
@@ -118,9 +102,6 @@ export interface BedrockFeature {
   geometry_wkt?: string;
 }
 
-/**
- * Clean well feature for tool output
- */
 export interface WellFeature {
   id: string;
   well_id: number;
@@ -139,9 +120,6 @@ export interface WellFeature {
   };
 }
 
-/**
- * Soil type information from GetFeatureInfo
- */
 export interface SoilTypeInfo {
   surface_layer?: string;
   underlying_layer?: string;
@@ -151,18 +129,12 @@ export interface SoilTypeInfo {
   raw_soil_type?: string;
 }
 
-/**
- * Map options for WMS requests
- */
 export interface MapOptions {
   width?: number;
   height?: number;
   format?: 'png' | 'jpeg';
 }
 
-/**
- * Map response
- */
 export interface MapResponse {
   map_url: string;
   legend_url: string;
@@ -180,9 +152,6 @@ export interface MapResponse {
 // Transform functions
 // ============================================================================
 
-/**
- * Transform raw SGU bedrock feature to clean output
- */
 export function transformBedrockFeature(feature: SguBedrockFeature): BedrockFeature {
   const props = feature.properties;
   return {
@@ -197,9 +166,6 @@ export function transformBedrockFeature(feature: SguBedrockFeature): BedrockFeat
   };
 }
 
-/**
- * Transform raw SGU well feature to clean output
- */
 export function transformWellFeature(feature: SguWellFeature): WellFeature {
   const props = feature.properties;
   return {
@@ -221,9 +187,6 @@ export function transformWellFeature(feature: SguWellFeature): WellFeature {
   };
 }
 
-/**
- * Transform WMS GetFeatureInfo response to clean soil type info
- */
 export function transformSoilTypeInfo(response: SguSoilTypeInfoResponse): SoilTypeInfo | null {
   const feature = response.features?.[0];
   if (!feature) return null;
@@ -241,9 +204,6 @@ export function transformSoilTypeInfo(response: SguSoilTypeInfoResponse): SoilTy
   };
 }
 
-/**
- * Convert GeoJSON geometry to WKT
- */
 function geometryToWkt(geometry: GeoJsonGeometry): string {
   const { type, coordinates } = geometry;
 
@@ -273,10 +233,7 @@ function geometryToWkt(geometry: GeoJsonGeometry): string {
 // Point Query Response Types (WMS GetFeatureInfo)
 // ============================================================================
 
-/**
- * WMS GetFeatureInfo response for bedrock geology
- * Layer: SE.GOV.SGU.BERG.GEOLOGISK_ENHET.YTA.50K
- */
+// Layer: SE.GOV.SGU.BERG.GEOLOGISK_ENHET.YTA.50K
 export interface SguBedrockInfoResponse {
   type: string;
   features?: Array<{
@@ -296,10 +253,7 @@ export interface SguBedrockInfoResponse {
   }>;
 }
 
-/**
- * WMS GetFeatureInfo response for soil depth
- * Layer: SE.GOV.SGU.JORD.JORDDJUP.50K
- */
+// Layer: SE.GOV.SGU.JORD.JORDDJUP.50K
 export interface SguSoilDepthInfoResponse {
   type: string;
   features?: Array<{
@@ -313,10 +267,7 @@ export interface SguSoilDepthInfoResponse {
   }>;
 }
 
-/**
- * WMS GetFeatureInfo response for boulder coverage
- * Layer: SE.GOV.SGU.JORD.BLOCKIGHET.25K
- */
+// Layer: SE.GOV.SGU.JORD.BLOCKIGHET.25K
 export interface SguBoulderCoverageInfoResponse {
   type: string;
   features?: Array<{
@@ -330,10 +281,7 @@ export interface SguBoulderCoverageInfoResponse {
   }>;
 }
 
-/**
- * WMS GetFeatureInfo response for groundwater aquifers
- * Layer: SE.GOV.SGU.HMAG.GRUNDVATTENMAGASIN_J1.V2
- */
+// Layer: SE.GOV.SGU.HMAG.GRUNDVATTENMAGASIN_J1.V2
 export interface SguGroundwaterInfoResponse {
   type: string;
   features?: Array<{
@@ -348,10 +296,7 @@ export interface SguGroundwaterInfoResponse {
   }>;
 }
 
-/**
- * WMS GetFeatureInfo response for landslide areas
- * Layer: SE.GOV.SGU.JORD.SKRED
- */
+// Layer: SE.GOV.SGU.JORD.SKRED
 export interface SguLandslideInfoResponse {
   type: string;
   features?: Array<{
@@ -366,10 +311,7 @@ export interface SguLandslideInfoResponse {
   }>;
 }
 
-/**
- * WMS GetFeatureInfo response for groundwater vulnerability
- * Layer: SE.GOV.SGU.GRUNDVATTEN.SARBARHET_3KL
- */
+// Layer: SE.GOV.SGU.GRUNDVATTEN.SARBARHET_3KL
 export interface SguGroundwaterVulnerabilityInfoResponse {
   type: string;
   features?: Array<{
@@ -383,11 +325,8 @@ export interface SguGroundwaterVulnerabilityInfoResponse {
   }>;
 }
 
-/**
- * WMS GetFeatureInfo response for radon risk (gamma radiation/uranium)
- * Layer: Uran (legacy resource.sgu.se)
- * Note: Property names vary - some servers return GRAY_INDEX, others use different names
- */
+// Layer: Uran (legacy resource.sgu.se)
+// Property names vary - some servers return GRAY_INDEX, others use different names
 export interface SguRadonRiskInfoResponse {
   type: string;
   features?: Array<{
@@ -397,11 +336,8 @@ export interface SguRadonRiskInfoResponse {
   }>;
 }
 
-/**
- * WMS GetFeatureInfo response for wells/boreholes
- * Layer: Brunnar (legacy resource.sgu.se)
- * Note: Property names vary - handle multiple casing variations
- */
+// Layer: Brunnar (legacy resource.sgu.se)
+// Property names vary - handle multiple casing variations
 export interface SguWellPointInfoResponse {
   type: string;
   features?: Array<{
@@ -415,7 +351,6 @@ export interface SguWellPointInfoResponse {
 // Point Query Clean Output Types
 // ============================================================================
 
-/** Clean bedrock point info */
 export interface BedrockInfo {
   rock_type?: string;
   geological_unit?: string;
@@ -425,45 +360,38 @@ export interface BedrockInfo {
   age?: string;
 }
 
-/** Clean soil depth info */
 export interface SoilDepthInfo {
   depth_class?: string;
   depth_description?: string;
 }
 
-/** Clean boulder coverage info */
 export interface BoulderCoverageInfo {
   coverage_class?: string;
   description?: string;
 }
 
-/** Clean groundwater info */
 export interface GroundwaterInfo {
   aquifer_type?: string;
   soil_layer?: string;
   capacity?: string;
 }
 
-/** Clean landslide info */
 export interface LandslideInfo {
   landslide_type?: string;
   date?: string;
   description?: string;
 }
 
-/** Clean groundwater vulnerability info */
 export interface GroundwaterVulnerabilityInfo {
   vulnerability_class?: string;
   description?: string;
 }
 
-/** Clean radon risk info */
 export interface RadonRiskInfo {
   radiation_value?: number;
   risk_level?: string; // low, moderate, high based on value
 }
 
-/** Clean well point info */
 export interface WellPointInfo {
   well_id?: number;
   total_depth_m?: number;
