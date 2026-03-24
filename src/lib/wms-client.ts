@@ -6,7 +6,6 @@ import { CRS_SWEREF99TM } from './coordinates';
 interface WmsClientConfig {
   baseUrl: string;
   timeout?: number;
-  version?: '1.1.1' | '1.3.0'; // Default: 1.3.0
 }
 
 interface GetMapOptions {
@@ -35,17 +34,14 @@ export function createWmsClient(config: WmsClientConfig) {
     baseUrl: config.baseUrl,
     timeout: config.timeout ?? 30000,
   });
-  const wmsVersion = config.version ?? '1.3.0';
 
   function getMapUrl(options: GetMapOptions): string {
-    const { layers, bbox, width = 800, height = 600, format = 'image/png', crs = CRS_SWEREF99TM, transparent = true } = options;
+    const { layers, bbox, width = 800, height = 600, format = 'image/png', crs = CRS_SWEREF99TM, transparent = true } =
+      options;
 
-    // WMS 1.1.1 vs 1.3.0 differences:
-    // - 1.1.1: SRS parameter, BBOX order is minX,minY,maxX,maxY
-    // - 1.3.0: CRS parameter, BBOX axis order depends on CRS definition
     const params = new URLSearchParams({
       SERVICE: 'WMS',
-      VERSION: wmsVersion,
+      VERSION: '1.3.0',
       REQUEST: 'GetMap',
       LAYERS: layers.join(','),
       WIDTH: String(width),
@@ -54,28 +50,9 @@ export function createWmsClient(config: WmsClientConfig) {
       TRANSPARENT: String(transparent),
     });
 
-    if (wmsVersion === '1.1.1') {
-      params.set('SRS', crs);
-      params.set('BBOX', `${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}`);
-    } else {
-      params.set('CRS', crs);
-      // WMS 1.3.0 axis order for EPSG:3006 (Y,X order per CRS definition)
-      params.set('BBOX', `${bbox.minY},${bbox.minX},${bbox.maxY},${bbox.maxX}`);
-    }
-
-    // Build the full URL
-    const baseUrl = config.baseUrl.endsWith('?') ? config.baseUrl.slice(0, -1) : config.baseUrl;
-    return `${baseUrl}?${params.toString()}`;
-  }
-
-  function getLegendUrl(layer: string, format: string = 'image/png'): string {
-    const params = new URLSearchParams({
-      SERVICE: 'WMS',
-      VERSION: wmsVersion,
-      REQUEST: 'GetLegendGraphic',
-      LAYER: layer,
-      FORMAT: format,
-    });
+    params.set('CRS', crs);
+    // WMS 1.3.0 axis order for EPSG:3006 (Y,X order per CRS definition)
+    params.set('BBOX', `${bbox.minY},${bbox.minX},${bbox.maxY},${bbox.maxX}`);
 
     const baseUrl = config.baseUrl.endsWith('?') ? config.baseUrl.slice(0, -1) : config.baseUrl;
     return `${baseUrl}?${params.toString()}`;
@@ -84,12 +61,9 @@ export function createWmsClient(config: WmsClientConfig) {
   async function getFeatureInfo<T>(options: GetFeatureInfoOptions): Promise<T> {
     const { layers, bbox, width, height, x, y, infoFormat = 'application/json', crs = CRS_SWEREF99TM } = options;
 
-    // WMS 1.1.1 vs 1.3.0 differences:
-    // - 1.1.1: X, Y for pixel coords, SRS for CRS, BBOX order is minX,minY,maxX,maxY
-    // - 1.3.0: I, J for pixel coords, CRS for CRS, BBOX axis order depends on CRS
     const params: Record<string, string | number> = {
       SERVICE: 'WMS',
-      VERSION: wmsVersion,
+      VERSION: '1.3.0',
       REQUEST: 'GetFeatureInfo',
       LAYERS: layers.join(','),
       QUERY_LAYERS: layers.join(','),
@@ -98,18 +72,11 @@ export function createWmsClient(config: WmsClientConfig) {
       INFO_FORMAT: infoFormat,
     };
 
-    if (wmsVersion === '1.1.1') {
-      params.SRS = crs;
-      params.BBOX = `${bbox.minX},${bbox.minY},${bbox.maxX},${bbox.maxY}`;
-      params.X = x;
-      params.Y = y;
-    } else {
-      params.CRS = crs;
-      // WMS 1.3.0 axis order for EPSG:3006
-      params.BBOX = `${bbox.minY},${bbox.minX},${bbox.maxY},${bbox.maxX}`;
-      params.I = x;
-      params.J = y;
-    }
+    params.CRS = crs;
+    // WMS 1.3.0 axis order for EPSG:3006
+    params.BBOX = `${bbox.minY},${bbox.minX},${bbox.maxY},${bbox.maxX}`;
+    params.I = x;
+    params.J = y;
 
     try {
       const response = await client.request<T>('', { params });
@@ -126,20 +93,8 @@ export function createWmsClient(config: WmsClientConfig) {
     }
   }
 
-  async function getCapabilities(): Promise<string> {
-    const params: Record<string, string> = {
-      SERVICE: 'WMS',
-      VERSION: '1.3.0',
-      REQUEST: 'GetCapabilities',
-    };
-
-    return client.request<string>('', { params });
-  }
-
   return {
     getMapUrl,
-    getLegendUrl,
     getFeatureInfo,
-    getCapabilities,
   };
 }

@@ -3,7 +3,19 @@ import { sguClient } from '@/clients/sgu-client';
 import { withErrorHandling } from '@/lib/response';
 import { processMapToolInput } from '@/lib/map-tool-handler';
 import { BoundingBox } from '@/lib/geometry-utils';
-import { MapResponse, MapOptions } from '@/types/common-schemas';
+import {
+  minLatSchema,
+  minLonSchema,
+  maxLatSchema,
+  maxLonSchema,
+  coordinatesSchema,
+  bufferMetersSchema,
+  widthSchema,
+  heightSchema,
+  formatSchema,
+  MapResponse,
+  MapOptions,
+} from '@/types/common-schemas';
 
 const MAP_LAYERS = [
   'bedrock',
@@ -38,21 +50,15 @@ export const getMapInputSchema = {
         'gravel_deposits, ' +
         'rock_deposits (construction materials)',
     ),
-  // Bbox mode parameters (WGS84)
-  minLat: z.number().optional().describe('Bbox min latitude (WGS84). Stockholm ~59.3'),
-  minLon: z.number().optional().describe('Bbox min longitude (WGS84). Stockholm ~18.0'),
-  maxLat: z.number().optional().describe('Bbox max latitude (WGS84)'),
-  maxLon: z.number().optional().describe('Bbox max longitude (WGS84)'),
-  // Corridor mode parameters (WGS84)
-  coordinates: z
-    .array(z.object({ latitude: z.number(), longitude: z.number() }))
-    .optional()
-    .describe('Corridor centerline [{latitude, longitude},...]. Alternative to bbox.'),
-  bufferMeters: z.number().optional().describe('Corridor buffer in meters (default: 500)'),
-  // Image parameters
-  width: z.number().optional().describe('Image width px (default: 800)'),
-  height: z.number().optional().describe('Image height px (default: 600)'),
-  format: z.enum(['png', 'jpeg']).optional().describe('Image format (default: png)'),
+  minLat: minLatSchema,
+  minLon: minLonSchema,
+  maxLat: maxLatSchema,
+  maxLon: maxLonSchema,
+  coordinates: coordinatesSchema,
+  bufferMeters: bufferMetersSchema,
+  width: widthSchema,
+  height: heightSchema,
+  format: formatSchema,
 };
 
 export const getMapTool = {

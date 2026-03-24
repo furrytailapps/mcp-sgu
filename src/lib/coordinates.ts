@@ -1,5 +1,6 @@
 import proj4 from 'proj4';
 import { ValidationError } from './errors';
+import type { BoundingBox } from './geometry-utils';
 
 export const CRS_SWEREF99TM = 'EPSG:3006';
 export const CRS_WGS84 = 'EPSG:4326';
@@ -15,13 +16,6 @@ export interface Sweref99Point {
 export interface Wgs84Point {
   latitude: number;
   longitude: number;
-}
-
-export interface Sweref99Bbox {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
 }
 
 export interface Wgs84Bbox {
@@ -64,35 +58,11 @@ export function wgs84ToSweref99(point: Wgs84Point): Sweref99Point {
   };
 }
 
-export function wgs84BboxToSweref99(bbox: Wgs84Bbox): Sweref99Bbox {
-  if (!isValidWgs84Coordinate(bbox.minLat, bbox.minLon)) {
-    throw new ValidationError(
-      `WGS84 coordinates (${bbox.minLat}, ${bbox.minLon}) are outside valid range for Sweden (55-69°N, 11-24°E)`,
-      'bbox',
-    );
-  }
-  if (!isValidWgs84Coordinate(bbox.maxLat, bbox.maxLon)) {
-    throw new ValidationError(
-      `WGS84 coordinates (${bbox.maxLat}, ${bbox.maxLon}) are outside valid range for Sweden (55-69°N, 11-24°E)`,
-      'bbox',
-    );
-  }
-  if (bbox.minLat >= bbox.maxLat) {
-    throw new ValidationError('minLat must be less than maxLat', 'bbox');
-  }
-  if (bbox.minLon >= bbox.maxLon) {
-    throw new ValidationError('minLon must be less than maxLon', 'bbox');
-  }
-
+export function wgs84BboxToSweref99(bbox: Wgs84Bbox): BoundingBox {
+  validateWgs84Bbox(bbox);
   const minCorner = wgs84ToSweref99({ latitude: bbox.minLat, longitude: bbox.minLon });
   const maxCorner = wgs84ToSweref99({ latitude: bbox.maxLat, longitude: bbox.maxLon });
-
-  return {
-    minX: minCorner.x,
-    minY: minCorner.y,
-    maxX: maxCorner.x,
-    maxY: maxCorner.y,
-  };
+  return { minX: minCorner.x, minY: minCorner.y, maxX: maxCorner.x, maxY: maxCorner.y };
 }
 
 export function wgs84CoordinatesToSweref99(coords: Wgs84Point[]): Sweref99Point[] {
@@ -103,7 +73,7 @@ export function wgs84CoordinatesToSweref99(coords: Wgs84Point[]): Sweref99Point[
   return coords.map((coord) => wgs84ToSweref99(coord));
 }
 
-export function sweref99BboxToWgs84(bbox: Sweref99Bbox): Wgs84Bbox {
+export function sweref99BboxToWgs84(bbox: BoundingBox): Wgs84Bbox {
   const [minLon, minLat] = proj4('EPSG:3006', 'EPSG:4326', [bbox.minX, bbox.minY]);
   const [maxLon, maxLat] = proj4('EPSG:3006', 'EPSG:4326', [bbox.maxX, bbox.maxY]);
   return { minLat, minLon, maxLat, maxLon };

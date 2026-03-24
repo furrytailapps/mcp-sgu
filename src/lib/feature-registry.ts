@@ -15,62 +15,21 @@ import {
 // OGC client factory (lazy — called at query time so mocks apply correctly)
 // ============================================================================
 
-function getBedrockClient() {
-  return createOgcClient({
-    baseUrl: 'https://api.sgu.se/oppnadata/berggrund50k-250k/ogc/features/v1',
-  });
-}
+const OGC_BASE = 'https://api.sgu.se/oppnadata';
 
-function getSoilType25kClient() {
-  return createOgcClient({
-    baseUrl: 'https://api.sgu.se/oppnadata/jordarter25k-100k/ogc/features/v1',
-  });
-}
-
-function getSoilType250kClient() {
-  return createOgcClient({
-    baseUrl: 'https://api.sgu.se/oppnadata/jordarter250k/ogc/features/v1',
-  });
-}
-
-function getGroundwaterClient() {
-  return createOgcClient({
-    baseUrl: 'https://api.sgu.se/oppnadata/grundvattenmagasin/ogc/features/v1',
-  });
-}
-
-function getWellsClient() {
-  return createOgcClient({
-    baseUrl: 'https://api.sgu.se/oppnadata/brunnar/ogc/features/v1',
-  });
-}
-
-function getSoilLayersClient() {
-  return createOgcClient({
-    baseUrl: 'https://api.sgu.se/oppnadata/jordlagerfoljder/ogc/features/v1',
-  });
+function getOgcClient(workspace: string) {
+  return createOgcClient({ baseUrl: `${OGC_BASE}/${workspace}/ogc/features/v1` });
 }
 
 // ============================================================================
 // Registry types
 // ============================================================================
 
-interface StaticFeatureConfig {
-  getClient: () => ReturnType<typeof createOgcClient>;
+interface FeatureConfig {
+  getClient: (bbox: BoundingBox) => ReturnType<typeof createOgcClient>;
   collection: string;
-  transform: (feature: GeoJsonFeature) => Record<string, unknown>;
+  transform: RegistryTransform;
 }
-
-interface DynamicFeatureConfig {
-  query: (
-    bbox: BoundingBox,
-    limit: number,
-    corridor?: Corridor,
-  ) => Promise<{ features: GeoJsonFeature[]; numberMatched?: number }>;
-  transform: (feature: GeoJsonFeature) => Record<string, unknown>;
-}
-
-type FeatureTypeConfig = StaticFeatureConfig | DynamicFeatureConfig;
 
 // ============================================================================
 // Shared query helper
@@ -115,38 +74,39 @@ const NORTH_LATITUDE_THRESHOLD = 65.1;
 // transform with its matching OGC endpoint — bedrock endpoint always returns bedrock features, etc.
 type RegistryTransform = (feature: GeoJsonFeature) => Record<string, unknown>;
 
-const FEATURE_REGISTRY: Record<FeatureDataType, FeatureTypeConfig> = {
+const FEATURE_REGISTRY: Record<FeatureDataType, FeatureConfig> = {
   bedrock: {
-    getClient: getBedrockClient,
+    getClient: () => getOgcClient('berggrund50k-250k'),
     collection: 'geologisk-enhet-yta',
     transform: transformBedrockFeature as unknown as RegistryTransform,
   },
 
   soil_type: {
-    query: async (bbox: BoundingBox, limit: number, corridor?: Corridor) => {
+    getClient: (bbox) => {
       // bbox is WGS84: minY=minLat, maxY=maxLat
       const centerLat = (bbox.minY + bbox.maxY) / 2;
-      const client =
-        centerLat > NORTH_LATITUDE_THRESHOLD ? getSoilType250kClient() : getSoilType25kClient();
-      return queryOgcEndpoint(client, 'grundlager', bbox, limit, corridor);
+      return centerLat > NORTH_LATITUDE_THRESHOLD
+        ? getOgcClient('jordarter250k')
+        : getOgcClient('jordarter25k-100k');
     },
+    collection: 'grundlager',
     transform: transformSoilFeature as unknown as RegistryTransform,
   },
 
   groundwater_aquifers: {
-    getClient: getGroundwaterClient,
+    getClient: () => getOgcClient('grundvattenmagasin'),
     collection: 'grundvattenmagasin',
     transform: transformAquiferFeature as unknown as RegistryTransform,
   },
 
   wells: {
-    getClient: getWellsClient,
+    getClient: () => getOgcClient('brunnar'),
     collection: 'brunnar',
     transform: transformWellFeature as unknown as RegistryTransform,
   },
 
   soil_layers: {
-    getClient: getSoilLayersClient,
+    getClient: () => getOgcClient('jordlagerfoljder'),
     collection: 'lagerinformation',
     transform: transformSoilLayerFeature as unknown as RegistryTransform,
   },
@@ -164,20 +124,13 @@ export async function queryFeatures(
   corridor?: Corridor,
 ): Promise<{ features: Record<string, unknown>[]; count: number; numberMatched?: number }> {
   const config = FEATURE_REGISTRY[dataType];
-
-  // Get raw features from OGC API
-  let result: { features: GeoJsonFeature[]; numberMatched?: number };
-  if ('query' in config) {
-    result = await config.query(bbox, limit, corridor);
-  } else {
-    const client = config.getClient();
-    result = await queryOgcEndpoint(client, config.collection, bbox, limit, corridor);
-  }
+  const client = config.getClient(bbox);
+  const result = await queryOgcEndpoint(client, config.collection, bbox, limit, corridor);
 
   // Transform properties + simplify/strip geometry
   const features = result.features.map((feature) => {
     const transformed = config.transform(feature);
-    if (transformed.geometry && geometryDetail) {
+    if (transformed.geometry) {
       transformed.geometry = simplifyGeometry(transformed.geometry as GeoJsonGeometry, geometryDetail);
     }
     return transformed;
