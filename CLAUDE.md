@@ -12,8 +12,7 @@ https://mcp-sgu.vercel.app/mcp
 
 - `sgu_query_point` — Query geological data at coordinates (9 data types via enum)
 - `sgu_get_map` — Get rendered map images (WMS, multiple layer types)
-- `sgu_get_bedrock` — Get bedrock features for an area (OGC API Features)
-- `sgu_describe_layers` — Describe available map layers and their metadata
+- `sgu_get_features` — Get geological features for an area (5 data types via OGC API, geometry detail levels)
 
 ## Quirks
 

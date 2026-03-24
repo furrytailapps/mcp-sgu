@@ -61,6 +61,11 @@ export const getMapTool = {
     'Generate a geological map image URL for an area in Sweden. ' +
     'Provide bbox (minLat, minLon, maxLat, maxLon) OR corridor (coordinates + bufferMeters). ' +
     'Coordinates in WGS84 (latitude/longitude). ' +
+    'Use cases: bedrock (regional geology), soil_types (site characterization), ' +
+    'boulder_coverage (material assessment), soil_depth (depth mapping), ' +
+    'groundwater (aquifer location), groundwater_vulnerability (protection zones), ' +
+    'landslide (hazard mapping), radon_risk (radiation zones), wells (borehole locations), ' +
+    'gravel_deposits (extraction planning), rock_deposits (quarry assessment). ' +
     'Returns map image URL and legend URL.',
   inputSchema: getMapInputSchema,
 };

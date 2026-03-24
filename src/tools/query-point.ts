@@ -42,7 +42,10 @@ export const queryPointTool = {
     'Query geological data at a specific coordinate in Sweden. ' +
     'Returns detailed information based on dataType. ' +
     'Coordinates in WGS84 (latitude/longitude). ' +
-    'Essential for site-specific construction and infrastructure planning.',
+    'Use cases: bedrock (foundation design, tunneling), soil_type (excavation planning), ' +
+    'boulder_coverage (equipment selection), soil_depth (pile length estimation), ' +
+    'groundwater (dewatering needs), groundwater_vulnerability (environmental impact), ' +
+    'landslide (slope stability), radon_risk (ventilation requirements), well (existing borehole data).',
   inputSchema: queryPointInputSchema,
 };
 
