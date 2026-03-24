@@ -7,7 +7,6 @@ import {
   transformSoilTypeInfo,
   SguBedrockInfoResponse,
   SguSoilDepthInfoResponse,
-  SguBoulderCoverageInfoResponse,
   SguGroundwaterInfoResponse,
   SguLandslideInfoResponse,
   SguGroundwaterVulnerabilityInfoResponse,
@@ -15,7 +14,6 @@ import {
   SguWellPointInfoResponse,
   BedrockInfo,
   SoilDepthInfo,
-  BoulderCoverageInfo,
   GroundwaterInfo,
   LandslideInfo,
   GroundwaterVulnerabilityInfo,
@@ -23,7 +21,6 @@ import {
   WellPointInfo,
   transformBedrockInfo,
   transformSoilDepthInfo,
-  transformBoulderCoverageInfo,
   transformGroundwaterInfo,
   transformLandslideInfo,
   transformGroundwaterVulnerabilityInfo,
@@ -232,12 +229,6 @@ export const sguClient = {
     soilDepthWmsClient,
     SOIL_DEPTH_LAYERS,
     transformSoilDepthInfo,
-  ),
-
-  getBoulderCoverageAt: createPointQueryMethod<SguBoulderCoverageInfoResponse, BoulderCoverageInfo>(
-    soilTypesWmsClient,
-    BOULDER_COVERAGE_LAYERS,
-    transformBoulderCoverageInfo,
   ),
 
   getGroundwaterAt: createPointQueryMethod<SguGroundwaterInfoResponse, GroundwaterInfo>(

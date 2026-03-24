@@ -2,148 +2,72 @@
 // WMS GetFeatureInfo Response Types (raw API responses)
 // ============================================================================
 
-// Layer: SE.GOV.SGU.BERG.GEOLOGISK_ENHET.YTA.50K
-export interface SguBedrockInfoResponse {
+// Generic wrapper — all WMS GetFeatureInfo responses are GeoJSON FeatureCollections
+interface WmsInfoResponse<P> {
   type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      bergart_tx?: string; // Rock type
-      geo_enh_tx?: string; // Geological unit
-      lito_n_tx?: string; // Lithology
-      tekt_n_tx?: string; // Tectonic unit
-      b_prop_tx?: string; // Rock properties
-      alder_tx?: string; // Age/period
-      // Alternative field names
-      rock_type?: string;
-      geological_unit?: string;
-    };
-  }>;
+  features?: Array<{ type: string; id?: string; properties: P }>;
 }
 
-// Layer: SE.GOV.SGU.MISC.JORDDJUPSMODELL.RASTER_INTERVALL
-export interface SguSoilDepthInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      jorddjup_10x10m?: number; // Depth to bedrock in meters (10m resolution model)
-    };
-  }>;
-}
+export type SguBedrockInfoResponse = WmsInfoResponse<{
+  bergart_tx?: string; // Rock type
+  geo_enh_tx?: string; // Geological unit
+  lito_n_tx?: string; // Lithology
+  tekt_n_tx?: string; // Tectonic unit
+  b_prop_tx?: string; // Rock properties
+  alder_tx?: string; // Age/period
+}>;
 
-// Layer: SE.GOV.SGU.JORD.BLOCKIGHET.25K
-export interface SguBoulderCoverageInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      blockighet?: string; // Boulder coverage class
-      Blockighet?: string; // Capitalized variant
-      blockighet_tx?: string; // Text description
-    };
-  }>;
-}
+export type SguSoilDepthInfoResponse = WmsInfoResponse<{
+  jorddjup_10x10m?: number; // Depth to bedrock in meters (10m resolution model)
+}>;
 
-// Layer: SE.GOV.SGU.HMAG.GRUNDVATTENMAGASIN_J1.V2
-export interface SguGroundwaterInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      akvifertyp?: string; // Aquifer type, e.g. "por- och sprickakvifer"
-      genes?: string; // Genesis, e.g. "isälvssediment"
-      infiltrationsmojligheter?: string; // Infiltration possibilities
-      magasinsnamn?: string; // Aquifer name
-    };
-  }>;
-}
+export type SguGroundwaterInfoResponse = WmsInfoResponse<{
+  akvifertyp?: string; // Aquifer type, e.g. "por- och sprickakvifer"
+  genes?: string; // Genesis, e.g. "isälvssediment"
+  infiltrationsmojligheter?: string; // Infiltration possibilities
+  magasinsnamn?: string; // Aquifer name
+}>;
 
-// Layer: SE.GOV.SGU.JORD.SKRED
-export interface SguLandslideInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      Beskrivning?: string; // Description, e.g. "Skredärr i finkornig jordart"
-      symbol?: number;
-    };
-  }>;
-}
+export type SguLandslideInfoResponse = WmsInfoResponse<{
+  Beskrivning?: string; // Description, e.g. "Skredärr i finkornig jordart"
+  symbol?: number;
+}>;
 
-// Layer: SE.GOV.SGU.GRUNDVATTEN.SARBARHET_3KL
-export interface SguGroundwaterVulnerabilityInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      sarbarhet?: string; // Vulnerability class (1, 2, 3)
-      sarbarhet_tx?: string; // Text description
-    };
-  }>;
-}
+export type SguGroundwaterVulnerabilityInfoResponse = WmsInfoResponse<{
+  sarbarhet?: string; // Vulnerability class
+  sarbarhet_tx?: string; // Text description
+}>;
 
-// Layer: SE.GOV.SGU.URAN (maps3.sgu.se fysik workspace)
-export interface SguRadonRiskInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      gamma_uran?: number; // Uranium concentration in Bq/kg
-    };
-  }>;
-}
+export type SguRadonRiskInfoResponse = WmsInfoResponse<{
+  gamma_uran?: number; // Uranium concentration in Bq/kg
+}>;
 
-// Layer: SE.GOV.SGU.BRUNNAR.250K (maps3.sgu.se grundvatten workspace)
-export interface SguWellPointInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      Brunnsidentitet?: number;
-      Kommun?: string;
-      Fastighet?: string;
-      Ort?: string;
-      Borrdatum?: string;
-      'Vattenmängd (liter/timme)'?: string;
-      'Grundvattennivå (m under markyta)'?: string;
-      'Totaldjup (m)'?: number;
-      'Jorddjup (m)'?: string;
-      Användning?: string;
-    };
-  }>;
-}
+export type SguWellPointInfoResponse = WmsInfoResponse<{
+  Brunnsidentitet?: number;
+  Kommun?: string;
+  Fastighet?: string;
+  Ort?: string;
+  Borrdatum?: string;
+  'Vattenmängd (liter/timme)'?: string;
+  'Grundvattennivå (m under markyta)'?: string;
+  'Totaldjup (m)'?: number;
+  'Jorddjup (m)'?: string;
+  Användning?: string;
+}>;
 
-// Layer: SE.GOV.SGU.JORD.GRUNDLAGER.25K
-export interface SguSoilTypeInfoResponse {
-  type: string;
-  features?: Array<{
-    type: string;
-    id?: string;
-    properties: {
-      Jordart?: string; // Soil type (e.g., "Morän", "Isälvssediment")
-      Kartering?: string; // Survey code
-      Karttyp?: number; // Map type code
-      symbol?: number; // Symbol number
-      // Legacy field names (may appear in some responses)
-      grundlager?: string;
-      jordart_tx?: string;
-      jordart?: string;
-      underlag?: string;
-      tunt_ytlager?: string;
-      landform?: string;
-      blockighet?: string;
-    };
-  }>;
-}
+export type SguSoilTypeInfoResponse = WmsInfoResponse<{
+  Jordart?: string; // Soil type (e.g. "Morän", "Isälvssediment")
+  Kartering?: string;
+  Karttyp?: number;
+  symbol?: number;
+  grundlager?: string;
+  jordart_tx?: string;
+  jordart?: string;
+  underlag?: string;
+  tunt_ytlager?: string;
+  landform?: string;
+  blockighet?: string;
+}>;
 
 // ============================================================================
 // Clean Point Query Output Types
@@ -161,11 +85,6 @@ export interface BedrockInfo {
 export interface SoilDepthInfo {
   depth_class?: string;
   depth_description?: string;
-}
-
-export interface BoulderCoverageInfo {
-  coverage_class?: string;
-  description?: string;
 }
 
 export interface GroundwaterInfo {
@@ -217,8 +136,8 @@ export function transformBedrockInfo(response: SguBedrockInfoResponse): BedrockI
 
   const props = feature.properties;
   return {
-    rock_type: props.bergart_tx || props.rock_type,
-    geological_unit: props.geo_enh_tx || props.geological_unit,
+    rock_type: props.bergart_tx,
+    geological_unit: props.geo_enh_tx,
     lithology: props.lito_n_tx,
     tectonic_unit: props.tekt_n_tx,
     rock_properties: props.b_prop_tx,
@@ -234,17 +153,6 @@ export function transformSoilDepthInfo(response: SguSoilDepthInfoResponse): Soil
   return {
     depth_class: depth !== undefined ? `${depth} m` : undefined,
     depth_description: depth !== undefined ? `Estimated depth to bedrock: ${depth} meters (10m resolution model)` : undefined,
-  };
-}
-
-export function transformBoulderCoverageInfo(response: SguBoulderCoverageInfoResponse): BoulderCoverageInfo | null {
-  const feature = response.features?.[0];
-  if (!feature) return null;
-
-  const props = feature.properties;
-  return {
-    coverage_class: props.blockighet || props.Blockighet,
-    description: props.blockighet_tx,
   };
 }
 

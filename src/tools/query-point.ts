@@ -6,7 +6,6 @@ import { wgs84ToSweref99, CRS_WGS84 } from '@/lib/coordinates';
 const DATA_TYPES = [
   'bedrock',
   'soil_type',
-  'boulder_coverage',
   'soil_depth',
   'groundwater',
   'groundwater_vulnerability',
@@ -26,7 +25,6 @@ export const queryPointInputSchema = {
       'Data type: ' +
         'bedrock (rock type/age), ' +
         'soil_type (surface layers), ' +
-        'boulder_coverage (blockiness), ' +
         'soil_depth (depth to bedrock), ' +
         'groundwater (aquifer), ' +
         'groundwater_vulnerability (contamination risk), ' +
@@ -43,7 +41,7 @@ export const queryPointTool = {
     'Returns detailed information based on dataType. ' +
     'Coordinates in WGS84 (latitude/longitude). ' +
     'Use cases: bedrock (foundation design, tunneling), soil_type (excavation planning), ' +
-    'boulder_coverage (equipment selection), soil_depth (pile length estimation), ' +
+    'soil_depth (pile length estimation), ' +
     'groundwater (dewatering needs), groundwater_vulnerability (environmental impact), ' +
     'landslide (slope stability), radon_risk (ventilation requirements), well (existing borehole data).',
   inputSchema: queryPointInputSchema,
@@ -58,7 +56,6 @@ type QueryPointInput = {
 const QUERY_CONFIG: Record<DataType, { method: (point: { x: number; y: number }) => Promise<unknown>; key: string }> = {
   bedrock: { method: sguClient.getBedrockAt, key: 'bedrock' },
   soil_type: { method: sguClient.getSoilTypeAt, key: 'soil_type' },
-  boulder_coverage: { method: sguClient.getBoulderCoverageAt, key: 'boulder_coverage' },
   soil_depth: { method: sguClient.getSoilDepthAt, key: 'soil_depth' },
   groundwater: { method: sguClient.getGroundwaterAt, key: 'groundwater' },
   groundwater_vulnerability: { method: sguClient.getGroundwaterVulnerabilityAt, key: 'groundwater_vulnerability' },
