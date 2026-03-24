@@ -2,13 +2,11 @@ import { ValidationError } from './errors';
 import type { GeoJsonGeometry } from '@/types/geojson';
 import type { GeometryDetail } from '@/types/common-schemas';
 
-export const CRS_SWEREF99TM = 'EPSG:3006';
-
 export interface BoundingBox {
-  minX: number; // Easting (min)
-  minY: number; // Northing (min)
-  maxX: number; // Easting (max)
-  maxY: number; // Northing (max)
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
 }
 
 export interface Point {
@@ -48,17 +46,6 @@ export function validateBbox(bbox: BoundingBox): void {
   if (!isValidSwedishCoordinate(bbox.maxX, bbox.maxY)) {
     throw new ValidationError(`Coordinates (${bbox.maxX}, ${bbox.maxY}) are outside valid SWEREF99TM range for Sweden`, 'bbox');
   }
-}
-
-export function validatePoint(point: Point): void {
-  if (!isValidSwedishCoordinate(point.x, point.y)) {
-    throw new ValidationError(`Coordinates (${point.x}, ${point.y}) are outside valid SWEREF99TM range for Sweden`, 'point');
-  }
-}
-
-export function bboxToWkt(bbox: BoundingBox): string {
-  const { minX, minY, maxX, maxY } = bbox;
-  return `POLYGON((${minX} ${minY}, ${maxX} ${minY}, ${maxX} ${maxY}, ${minX} ${maxY}, ${minX} ${minY}))`;
 }
 
 // OGC bbox string format: minX,minY,maxX,maxY
@@ -144,23 +131,10 @@ export function corridorToWktPolygon(corridor: Corridor): string {
   return `POLYGON((${coordString}))`;
 }
 
-export function bboxDimensions(bbox: BoundingBox): { width: number; height: number } {
-  return {
-    width: bbox.maxX - bbox.minX,
-    height: bbox.maxY - bbox.minY,
-  };
-}
-
-export function bboxCenter(bbox: BoundingBox): Point {
-  return {
-    x: (bbox.minX + bbox.maxX) / 2,
-    y: (bbox.minY + bbox.maxY) / 2,
-  };
-}
-
 // Douglas-Peucker simplification helpers
 
-const SIMPLIFY_TOLERANCE = 100; // 100 meters in SWEREF99TM
+// ~100m at Swedish latitudes in WGS84 degrees (1 degree lat ≈ 111km, 0.001° ≈ 111m)
+const WGS84_SIMPLIFICATION_TOLERANCE = 0.001;
 
 function perpendicularDist(point: number[], lineStart: number[], lineEnd: number[]): number {
   const [x, y] = point;
@@ -200,7 +174,11 @@ function truncateCoords(coords: number[][]): number[][] {
   return coords.map((c) => c.map(truncateCoord));
 }
 
-export function simplifyGeometry(geometry: GeoJsonGeometry, detail: GeometryDetail): GeoJsonGeometry | undefined {
+export function simplifyGeometry(
+  geometry: GeoJsonGeometry,
+  detail: GeometryDetail,
+  tolerance: number = WGS84_SIMPLIFICATION_TOLERANCE,
+): GeoJsonGeometry | undefined {
   if (detail === 'none') return undefined;
 
   if (geometry.type === 'Point') {
@@ -210,14 +188,14 @@ export function simplifyGeometry(geometry: GeoJsonGeometry, detail: GeometryDeta
 
   if (geometry.type === 'LineString') {
     const coords = geometry.coordinates as number[][];
-    const simplified = detail === 'simplified' ? simplifyRing(coords, SIMPLIFY_TOLERANCE) : coords;
+    const simplified = detail === 'simplified' ? simplifyRing(coords, tolerance) : coords;
     return { type: 'LineString', coordinates: truncateCoords(simplified) };
   }
 
   if (geometry.type === 'Polygon') {
     const rings = geometry.coordinates as number[][][];
     const processed = rings.map((ring) => {
-      const simplified = detail === 'simplified' ? simplifyRing(ring, SIMPLIFY_TOLERANCE) : ring;
+      const simplified = detail === 'simplified' ? simplifyRing(ring, tolerance) : ring;
       return truncateCoords(simplified);
     });
     return { type: 'Polygon', coordinates: processed };
@@ -227,7 +205,7 @@ export function simplifyGeometry(geometry: GeoJsonGeometry, detail: GeometryDeta
     const polygons = geometry.coordinates as number[][][][];
     const processed = polygons.map((rings) =>
       rings.map((ring) => {
-        const simplified = detail === 'simplified' ? simplifyRing(ring, SIMPLIFY_TOLERANCE) : ring;
+        const simplified = detail === 'simplified' ? simplifyRing(ring, tolerance) : ring;
         return truncateCoords(simplified);
       }),
     );

@@ -22,16 +22,14 @@ export interface SguBedrockInfoResponse {
   }>;
 }
 
-// Layer: SE.GOV.SGU.JORD.JORDDJUP.50K
+// Layer: SE.GOV.SGU.MISC.JORDDJUPSMODELL.RASTER_INTERVALL
 export interface SguSoilDepthInfoResponse {
   type: string;
   features?: Array<{
     type: string;
     id?: string;
     properties: {
-      jorddjup?: string; // Soil depth class
-      Jorddjup?: string; // Capitalized variant
-      jorddjup_tx?: string; // Soil depth text description
+      jorddjup_10x10m?: number; // Depth to bedrock in meters (10m resolution model)
     };
   }>;
 }
@@ -88,31 +86,41 @@ export interface SguGroundwaterVulnerabilityInfoResponse {
     id?: string;
     properties: {
       sarbarhet?: string; // Vulnerability class (1, 2, 3)
-      Sarbarhet?: string; // Capitalized variant
       sarbarhet_tx?: string; // Text description
     };
   }>;
 }
 
-// Layer: Uran (legacy resource.sgu.se)
-// Property names vary - some servers return GRAY_INDEX, others use different names
+// Layer: SE.GOV.SGU.URAN (maps3.sgu.se fysik workspace)
 export interface SguRadonRiskInfoResponse {
   type: string;
   features?: Array<{
     type: string;
     id?: string;
-    properties: Record<string, unknown>; // Flexible to handle varying property names
+    properties: {
+      gamma_uran?: number; // Uranium concentration in Bq/kg
+    };
   }>;
 }
 
-// Layer: Brunnar (legacy resource.sgu.se)
-// Property names vary - handle multiple casing variations
+// Layer: SE.GOV.SGU.BRUNNAR.250K (maps3.sgu.se grundvatten workspace)
 export interface SguWellPointInfoResponse {
   type: string;
   features?: Array<{
     type: string;
     id?: string;
-    properties: Record<string, unknown>; // Flexible to handle varying property names
+    properties: {
+      Brunnsidentitet?: number;
+      Kommun?: string;
+      Fastighet?: string;
+      Ort?: string;
+      Borrdatum?: string;
+      'Vattenmängd (liter/timme)'?: string;
+      'Grundvattennivå (m under markyta)'?: string;
+      'Totaldjup (m)'?: number;
+      'Jorddjup (m)'?: string;
+      Användning?: string;
+    };
   }>;
 }
 
@@ -199,7 +207,6 @@ export interface SoilTypeInfo {
   thin_surface_layer?: string;
   landform?: string;
   boulder_coverage?: string;
-  raw_soil_type?: string;
 }
 
 // ============================================================================
@@ -225,10 +232,10 @@ export function transformSoilDepthInfo(response: SguSoilDepthInfoResponse): Soil
   const feature = response.features?.[0];
   if (!feature) return null;
 
-  const props = feature.properties;
+  const depth = feature.properties.jorddjup_10x10m;
   return {
-    depth_class: props.jorddjup || props.Jorddjup,
-    depth_description: props.jorddjup_tx,
+    depth_class: depth !== undefined ? `${depth} m` : undefined,
+    depth_description: depth !== undefined ? `Estimated depth to bedrock: ${depth} meters (10m resolution model)` : undefined,
   };
 }
 
@@ -274,7 +281,7 @@ export function transformGroundwaterVulnerabilityInfo(
   if (!feature) return null;
 
   const props = feature.properties;
-  const rawClass = props.sarbarhet || props.Sarbarhet;
+  const rawClass = props.sarbarhet;
 
   // Map numeric class to human-readable
   const classMap: Record<string, string> = {
@@ -293,48 +300,15 @@ export function transformRadonRiskInfo(response: SguRadonRiskInfoResponse): Rado
   const feature = response.features?.[0];
   if (!feature) return null;
 
-  const props = feature.properties;
-
-  // Try multiple possible property names for the radiation value
-  // SGU WMS may return GRAY_INDEX, gray_index, value, or other variations
-  let value: number | undefined;
-
-  // Check common property names
-  const possibleKeys = ['GRAY_INDEX', 'gray_index', 'value', 'Value', 'uranium', 'Uranium', 'uran', 'Uran'];
-  for (const key of possibleKeys) {
-    if (typeof props[key] === 'number') {
-      value = props[key] as number;
-      break;
-    }
-  }
-
-  // If no known property found, try to find any numeric value
-  if (value === undefined) {
-    for (const [, val] of Object.entries(props)) {
-      if (typeof val === 'number' && !Number.isNaN(val)) {
-        value = val;
-        break;
-      }
-    }
-  }
-
-  // Map radiation value to risk level
-  // Based on typical uranium concentration thresholds for radon risk
+  const value = feature.properties.gamma_uran;
   let riskLevel: string | undefined;
   if (value !== undefined) {
-    if (value < 3) {
-      riskLevel = 'low';
-    } else if (value < 5) {
-      riskLevel = 'moderate';
-    } else {
-      riskLevel = 'high';
-    }
+    if (value < 3) riskLevel = 'low';
+    else if (value < 5) riskLevel = 'moderate';
+    else riskLevel = 'high';
   }
 
-  return {
-    radiation_value: value,
-    risk_level: riskLevel,
-  };
+  return { radiation_value: value, risk_level: riskLevel };
 }
 
 export function transformWellPointInfo(response: SguWellPointInfoResponse): WellPointInfo | null {
@@ -342,28 +316,13 @@ export function transformWellPointInfo(response: SguWellPointInfoResponse): Well
   if (!feature) return null;
 
   const props = feature.properties;
-
-  // Helper to get value with case variations
-  const getNum = (...keys: string[]): number | undefined => {
-    for (const key of keys) {
-      if (typeof props[key] === 'number') return props[key] as number;
-    }
-    return undefined;
-  };
-  const getStr = (...keys: string[]): string | undefined => {
-    for (const key of keys) {
-      if (typeof props[key] === 'string') return props[key] as string;
-    }
-    return undefined;
-  };
-
   return {
-    well_id: getNum('brunnsid', 'Brunnsid', 'BRUNNSID', 'well_id', 'wellId'),
-    total_depth_m: getNum('totaldjup', 'Totaldjup', 'TOTALDJUP', 'total_depth'),
-    soil_depth_m: getNum('jorddjup', 'Jorddjup', 'JORDDJUP', 'soil_depth'),
-    capacity_ls: getNum('kapacitet', 'Kapacitet', 'KAPACITET', 'capacity'),
-    groundwater_level_m: getNum('grundvattenniva', 'Grundvattenniva', 'GRUNDVATTENNIVA', 'gw_level'),
-    usage: getStr('anvandning', 'Anvandning', 'ANVANDNING', 'usage'),
+    well_id: props.Brunnsidentitet,
+    total_depth_m: props['Totaldjup (m)'],
+    soil_depth_m: props['Jorddjup (m)'] !== undefined ? Number(props['Jorddjup (m)']) : undefined,
+    capacity_ls: props['Vattenmängd (liter/timme)'] !== undefined ? Number(props['Vattenmängd (liter/timme)']) / 3600 : undefined,
+    groundwater_level_m: props['Grundvattennivå (m under markyta)'] !== undefined ? Number(props['Grundvattennivå (m under markyta)']) : undefined,
+    usage: props.Användning,
   };
 }
 
@@ -380,6 +339,5 @@ export function transformSoilTypeInfo(response: SguSoilTypeInfoResponse): SoilTy
     thin_surface_layer: props.tunt_ytlager,
     landform: props.landform,
     boulder_coverage: props.blockighet,
-    raw_soil_type: soilType,
   };
 }

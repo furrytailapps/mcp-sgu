@@ -1,5 +1,6 @@
 import { createOgcClient } from '@/lib/ogc-client';
 import { simplifyGeometry, type BoundingBox, type Corridor, corridorToWktPolygon } from '@/lib/geometry-utils';
+import { CRS_SWEREF99TM } from '@/lib/coordinates';
 import type { GeoJsonFeature, GeoJsonGeometry } from '@/types/geojson';
 import type { FeatureDataType, GeometryDetail } from '@/types/common-schemas';
 import {
@@ -75,31 +76,39 @@ type FeatureTypeConfig = StaticFeatureConfig | DynamicFeatureConfig;
 // Shared query helper
 // ============================================================================
 
+// wgs84Bbox has minX=minLon, minY=minLat (BoundingBox is CRS-agnostic)
 async function queryOgcEndpoint(
   client: ReturnType<typeof createOgcClient>,
   collection: string,
-  bbox: BoundingBox,
+  wgs84Bbox: BoundingBox,
   limit: number,
   corridor?: Corridor,
 ): Promise<{ features: GeoJsonFeature[]; numberMatched?: number }> {
   if (corridor) {
     try {
       const polygonWkt = corridorToWktPolygon(corridor);
-      return await client.getItemsWithCount<GeoJsonFeature>(collection, { polygonWkt, limit });
+      // Polygon is in SWEREF99TM; no crs param = WGS84 response
+      return await client.getItemsWithCount<GeoJsonFeature>(collection, {
+        polygonWkt,
+        filterCrs: CRS_SWEREF99TM,
+        limit,
+      });
     } catch {
       // Fall back to bbox query
     }
   }
-  return await client.getItemsWithCount<GeoJsonFeature>(collection, { bbox, limit });
+  // No crs param = WGS84 bbox + WGS84 response
+  return await client.getItemsWithCount<GeoJsonFeature>(collection, { bbox: wgs84Bbox, limit });
 }
 
 // ============================================================================
 // Feature registry
 // ============================================================================
 
-// SWEREF99TM northing threshold separating northern from southern Sweden for soil type scale.
+// WGS84 latitude threshold separating northern from southern Sweden for soil type scale.
 // Below: use 25k-100k scale; above: use 250k scale (only 250k covers the far north).
-const NORTH_SOUTHING_THRESHOLD = 7230000;
+// ~65.1°N corresponds to SWEREF99TM northing ~7230000.
+const NORTH_LATITUDE_THRESHOLD = 65.1;
 
 // Each transform is strongly typed (e.g. GeoJsonFeature<SguBedrockProperties> => BedrockFeature)
 // but the registry needs a common type. The casts are safe because the registry pairs each
@@ -115,9 +124,10 @@ const FEATURE_REGISTRY: Record<FeatureDataType, FeatureTypeConfig> = {
 
   soil_type: {
     query: async (bbox: BoundingBox, limit: number, corridor?: Corridor) => {
-      const centerNorthing = (bbox.minY + bbox.maxY) / 2;
+      // bbox is WGS84: minY=minLat, maxY=maxLat
+      const centerLat = (bbox.minY + bbox.maxY) / 2;
       const client =
-        centerNorthing > NORTH_SOUTHING_THRESHOLD ? getSoilType250kClient() : getSoilType25kClient();
+        centerLat > NORTH_LATITUDE_THRESHOLD ? getSoilType250kClient() : getSoilType25kClient();
       return queryOgcEndpoint(client, 'grundlager', bbox, limit, corridor);
     },
     transform: transformSoilFeature as unknown as RegistryTransform,

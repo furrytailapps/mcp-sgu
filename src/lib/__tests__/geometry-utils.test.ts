@@ -2,14 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   isValidSwedishCoordinate,
   validateBbox,
-  validatePoint,
-  bboxToWkt,
   bboxToString,
   corridorToBoundingBox,
   corridorToWktPolygon,
-  bboxDimensions,
-  bboxCenter,
-  CRS_SWEREF99TM,
   simplifyGeometry,
   type BoundingBox,
   type Corridor,
@@ -18,12 +13,6 @@ import { ValidationError } from '../errors';
 import type { GeoJsonGeometry } from '@/types/geojson';
 
 describe('geometry-utils', () => {
-  describe('CRS_SWEREF99TM', () => {
-    it('should be EPSG:3006', () => {
-      expect(CRS_SWEREF99TM).toBe('EPSG:3006');
-    });
-  });
-
   describe('isValidSwedishCoordinate', () => {
     it('should return true for valid Stockholm coordinates', () => {
       // Stockholm area: approximately 674000, 6580000
@@ -107,30 +96,6 @@ describe('geometry-utils', () => {
     });
   });
 
-  describe('validatePoint', () => {
-    it('should not throw for valid point', () => {
-      expect(() => validatePoint({ x: 674000, y: 6580000 })).not.toThrow();
-    });
-
-    it('should throw for point outside Sweden', () => {
-      expect(() => validatePoint({ x: 100000, y: 6580000 })).toThrow(ValidationError);
-      expect(() => validatePoint({ x: 100000, y: 6580000 })).toThrow('outside valid SWEREF99TM range');
-    });
-  });
-
-  describe('bboxToWkt', () => {
-    it('should convert bbox to WKT POLYGON', () => {
-      const bbox: BoundingBox = {
-        minX: 670000,
-        minY: 6570000,
-        maxX: 680000,
-        maxY: 6590000,
-      };
-      const wkt = bboxToWkt(bbox);
-      expect(wkt).toBe('POLYGON((670000 6570000, 680000 6570000, 680000 6590000, 670000 6590000, 670000 6570000))');
-    });
-  });
-
   describe('bboxToString', () => {
     it('should convert bbox to comma-separated string', () => {
       const bbox: BoundingBox = {
@@ -208,48 +173,24 @@ describe('geometry-utils', () => {
     });
   });
 
-  describe('bboxDimensions', () => {
-    it('should calculate width and height', () => {
-      const bbox: BoundingBox = {
-        minX: 670000,
-        minY: 6570000,
-        maxX: 680000,
-        maxY: 6590000,
-      };
-      const dims = bboxDimensions(bbox);
-      expect(dims.width).toBe(10000);
-      expect(dims.height).toBe(20000);
-    });
-  });
-
-  describe('bboxCenter', () => {
-    it('should calculate center point', () => {
-      const bbox: BoundingBox = {
-        minX: 670000,
-        minY: 6570000,
-        maxX: 680000,
-        maxY: 6590000,
-      };
-      const center = bboxCenter(bbox);
-      expect(center.x).toBe(675000);
-      expect(center.y).toBe(6580000);
-    });
-  });
 });
 
 describe('simplifyGeometry', () => {
+  // WGS84 polygon around Stockholm with nearly-collinear intermediate points on
+  // the bottom edge. Those points deviate <0.001° from the straight line and will
+  // be collapsed by Douglas-Peucker with the default WGS84 tolerance.
   const polygonGeometry: GeoJsonGeometry = {
     type: 'Polygon',
     coordinates: [[
-      [670000, 6570000], [670050, 6570010], [670100, 6570000],
-      [670150, 6570020], [670200, 6570000], [670200, 6580000],
-      [670000, 6580000], [670000, 6570000],
+      [18.0, 59.3], [18.05, 59.3001], [18.1, 59.3],
+      [18.15, 59.3001], [18.2, 59.3], [18.2, 59.4],
+      [18.0, 59.4], [18.0, 59.3],
     ]],
   };
 
   const pointGeometry: GeoJsonGeometry = {
     type: 'Point',
-    coordinates: [670000.123456789, 6570000.987654321],
+    coordinates: [18.123456789, 59.987654321],
   };
 
   it("returns undefined for detail === 'none' with polygon", () => {
@@ -274,8 +215,8 @@ describe('simplifyGeometry', () => {
     expect(result).toBeDefined();
     expect(result!.type).toBe('Point');
     const coords = result!.coordinates as number[];
-    expect(coords[0]).toBe(670000.123457);
-    expect(coords[1]).toBe(6570000.987654);
+    expect(coords[0]).toBe(18.123457);
+    expect(coords[1]).toBe(59.987654);
   });
 
   it("returns all coords with truncation for detail === 'full'", () => {
@@ -288,12 +229,24 @@ describe('simplifyGeometry', () => {
     expect(resultCoords.length).toBe(originalCoords.length);
   });
 
+  it('accepts optional tolerance parameter and uses it for simplification', () => {
+    // With a large tolerance (0.1°) even the jagged corners collapse
+    const resultLoose = simplifyGeometry(polygonGeometry, 'simplified', 0.1);
+    const resultTight = simplifyGeometry(polygonGeometry, 'simplified', 0.0001);
+    expect(resultLoose).toBeDefined();
+    expect(resultTight).toBeDefined();
+    const looseCoordsLen = ((resultLoose!.coordinates as number[][][])[0]).length;
+    const tightCoordsLen = ((resultTight!.coordinates as number[][][])[0]).length;
+    // Looser tolerance = fewer coords than tighter tolerance
+    expect(looseCoordsLen).toBeLessThanOrEqual(tightCoordsLen);
+  });
+
   it('handles MultiPolygon correctly', () => {
     const multiPolygon: GeoJsonGeometry = {
       type: 'MultiPolygon',
       coordinates: [
-        [[[670000, 6570000], [670050, 6570010], [670100, 6570000], [670200, 6580000], [670000, 6580000], [670000, 6570000]]],
-        [[[680000, 6570000], [680050, 6570010], [680100, 6570000], [680200, 6580000], [680000, 6580000], [680000, 6570000]]],
+        [[[18.0, 59.3], [18.05, 59.3001], [18.1, 59.3], [18.2, 59.4], [18.0, 59.4], [18.0, 59.3]]],
+        [[[19.0, 59.3], [19.05, 59.3001], [19.1, 59.3], [19.2, 59.4], [19.0, 59.4], [19.0, 59.3]]],
       ],
     };
 

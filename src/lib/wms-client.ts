@@ -1,6 +1,7 @@
 import { createHttpClient } from './http-client';
 import { UpstreamApiError } from './errors';
-import { BoundingBox, CRS_SWEREF99TM } from './geometry-utils';
+import { BoundingBox } from './geometry-utils';
+import { CRS_SWEREF99TM } from './coordinates';
 
 interface WmsClientConfig {
   baseUrl: string;
