@@ -34,7 +34,10 @@ export function createOgcClient(config: OgcClientConfig) {
   });
 
   // Supports bbox or polygon WKT filter (polygon takes precedence)
-  async function getItems<T>(collection: string, options: QueryOptions = {}): Promise<T[]> {
+  async function getItemsWithCount<T>(
+    collection: string,
+    options: QueryOptions = {},
+  ): Promise<{ features: T[]; numberMatched?: number }> {
     const { bbox, polygonWkt, limit = 100, offset, crs = CRS_SWEREF99TM } = options;
 
     const params: Record<string, string | number | undefined> = {
@@ -54,18 +57,26 @@ export function createOgcClient(config: OgcClientConfig) {
     }
 
     try {
-      const response = await client.request<OgcFeaturesResponse<T>>(`collections/${collection}/items`, { params });
-      return response.features;
+      const response = await client.request<OgcFeaturesResponse<T>>(
+        `collections/${collection}/items`,
+        { params },
+      );
+      return { features: response.features, numberMatched: response.numberMatched };
     } catch (error) {
       if (error instanceof UpstreamApiError) {
         throw error;
       }
       throw new UpstreamApiError(
-        'Failed to fetch bedrock features for this area. The data service may be temporarily unavailable — try again.',
+        'Failed to fetch features for this area. The data service may be temporarily unavailable — try again.',
         0,
         config.baseUrl,
       );
     }
+  }
+
+  async function getItems<T>(collection: string, options: QueryOptions = {}): Promise<T[]> {
+    const result = await getItemsWithCount<T>(collection, options);
+    return result.features;
   }
 
   async function getCollections(): Promise<{ id: string; title: string; description?: string }[]> {
@@ -81,6 +92,7 @@ export function createOgcClient(config: OgcClientConfig) {
 
   return {
     getItems,
+    getItemsWithCount,
     getCollections,
     getFeature,
   };

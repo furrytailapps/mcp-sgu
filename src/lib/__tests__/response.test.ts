@@ -60,8 +60,8 @@ describe('response', () => {
 
       const errorData = JSON.parse(response.content[0].text);
       expect(errorData.code).toBe('UPSTREAM_API_ERROR');
-      expect(errorData.details.statusCode).toBe(503);
-      expect(errorData.details.upstream).toBe('SGU WMS');
+      // statusCode and upstream are internal details filtered from LLM-facing output
+      expect(errorData.details).toBeUndefined();
     });
 
     it('should handle generic Error', () => {
