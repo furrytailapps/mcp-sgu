@@ -1,7 +1,6 @@
 import { withErrorHandling } from '@/lib/response';
-import { ValidationError } from '@/lib/errors';
-import { BoundingBox, Corridor, corridorToBoundingBox, validateBbox } from '@/lib/geometry-utils';
-import { wgs84BboxToSweref99, wgs84CoordinatesToSweref99 } from '@/lib/coordinates';
+import { BoundingBox, Corridor, corridorToBoundingBox } from '@/lib/geometry-utils';
+import { wgs84CoordinatesToSweref99, sweref99BboxToWgs84, validateWgs84Bbox } from '@/lib/coordinates';
 import { queryFeatures } from '@/lib/feature-registry';
 import {
   featureDataTypeSchema,
@@ -60,41 +59,43 @@ export const getFeaturesHandler = withErrorHandling(async (args: GetFeaturesInpu
   const hasCorridor = args.coordinates !== undefined && args.coordinates.length >= 2;
 
   if (!hasBbox && !hasCorridor) {
-    throw new ValidationError(
+    throw new Error(
       'Either bbox (minLat, minLon, maxLat, maxLon) or corridor (coordinates array with [{latitude, longitude}, ...]) must be provided',
     );
   }
 
-  // Build corridor object if corridor params provided
+  // Build corridor object and derive WGS84 bbox from corridor envelope
   let corridor: Corridor | undefined;
-  if (hasCorridor) {
-    const sweref99Coords = wgs84CoordinatesToSweref99(args.coordinates!);
-    corridor = { coordinates: sweref99Coords, bufferMeters: args.bufferMeters ?? 500 };
-  }
-
-  // Compute bbox
   let bbox: BoundingBox;
   let queryType: 'bbox' | 'corridor';
-  if (corridor) {
-    bbox = corridorToBoundingBox(corridor);
+
+  if (hasCorridor) {
+    // Corridor buffer math requires meters — convert to SWEREF99TM
+    const sweref99Coords = wgs84CoordinatesToSweref99(args.coordinates!);
+    corridor = { coordinates: sweref99Coords, bufferMeters: args.bufferMeters ?? 500 };
+    // Convert the SWEREF99TM bbox back to WGS84 for the OGC query
+    const sweref99Bbox = corridorToBoundingBox(corridor);
+    const wgs84Bbox = sweref99BboxToWgs84(sweref99Bbox);
+    // BoundingBox is CRS-agnostic: minX=minLon, minY=minLat
+    bbox = { minX: wgs84Bbox.minLon, minY: wgs84Bbox.minLat, maxX: wgs84Bbox.maxLon, maxY: wgs84Bbox.maxLat };
     queryType = 'corridor';
   } else {
-    bbox = wgs84BboxToSweref99({ minLat: args.minLat!, minLon: args.minLon!, maxLat: args.maxLat!, maxLon: args.maxLon! });
+    // Bbox mode: use WGS84 input directly — no conversion needed
+    validateWgs84Bbox({ minLat: args.minLat!, minLon: args.minLon!, maxLat: args.maxLat!, maxLon: args.maxLon! });
+    bbox = { minX: args.minLon!, minY: args.minLat!, maxX: args.maxLon!, maxY: args.maxLat! };
     queryType = 'bbox';
   }
-
-  validateBbox(bbox);
 
   const geometryDetail = args.geometryDetail ?? 'simplified';
   const limit = args.limit ?? 50;
 
-  // Query via feature registry
+  // Query via feature registry (bbox is WGS84: minX=minLon, minY=minLat)
   const result = await queryFeatures(args.dataType, bbox, limit, geometryDetail, corridor);
 
   return {
     data_type: args.dataType,
     query_type: queryType,
-    coordinate_system: 'EPSG:3006',
+    coordinate_system: 'WGS84',
     geometry_detail: geometryDetail,
     count: result.count,
     number_matched: result.numberMatched,

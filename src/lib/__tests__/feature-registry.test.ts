@@ -26,11 +26,11 @@ const mockBedrockFeature = {
     type: 'Polygon',
     coordinates: [
       [
-        [670000, 6570000],
-        [670100, 6570000],
-        [670100, 6580000],
-        [670000, 6580000],
-        [670000, 6570000],
+        [18.0, 59.3],
+        [18.01, 59.3],
+        [18.01, 59.31],
+        [18.0, 59.31],
+        [18.0, 59.3],
       ],
     ],
   },
@@ -52,11 +52,11 @@ const mockSoilFeature = {
     type: 'Polygon',
     coordinates: [
       [
-        [670000, 6570000],
-        [670100, 6570000],
-        [670100, 6580000],
-        [670000, 6580000],
-        [670000, 6570000],
+        [18.0, 59.3],
+        [18.01, 59.3],
+        [18.01, 59.31],
+        [18.0, 59.31],
+        [18.0, 59.3],
       ],
     ],
   },
@@ -67,20 +67,21 @@ const mockSoilFeature = {
   },
 };
 
-// A bbox in southern Sweden (northing center ~6580000, below 7230000 threshold)
+// A bbox in southern Sweden (WGS84: center lat ~59.3°N, below 65.1° threshold)
+// BoundingBox is CRS-agnostic: minX=minLon, minY=minLat
 const southernBbox: BoundingBox = {
-  minX: 669000,
-  minY: 6575000,
-  maxX: 671000,
-  maxY: 6585000,
+  minX: 17.95,
+  minY: 59.25,
+  maxX: 18.05,
+  maxY: 59.35,
 };
 
-// A bbox in northern Sweden (northing center ~7300000, above 7230000 threshold)
+// A bbox in northern Sweden (WGS84: center lat ~65.5°N, above 65.1° threshold)
 const northernBbox: BoundingBox = {
-  minX: 669000,
-  minY: 7250000,
-  maxX: 671000,
-  maxY: 7350000,
+  minX: 17.95,
+  minY: 65.4,
+  maxX: 18.05,
+  maxY: 65.6,
 };
 
 // ============================================================================
@@ -161,8 +162,8 @@ describe('queryFeatures', () => {
   });
 
   describe('soil_type scale selection', () => {
-    it('uses jordarter25k-100k for southern Sweden (centerNorthing <= 7230000)', async () => {
-      // southernBbox center Y = (6575000 + 6585000) / 2 = 6580000, below threshold
+    it('uses jordarter25k-100k for southern Sweden (centerLat <= 65.1)', async () => {
+      // southernBbox center lat = (59.25 + 59.35) / 2 = 59.3, below 65.1 threshold
       const mockClient = getMockClient([mockSoilFeature]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
@@ -179,8 +180,8 @@ describe('queryFeatures', () => {
       );
     });
 
-    it('uses jordarter250k for northern Sweden (centerNorthing > 7230000)', async () => {
-      // northernBbox center Y = (7250000 + 7350000) / 2 = 7300000, above threshold
+    it('uses jordarter250k for northern Sweden (centerLat > 65.1)', async () => {
+      // northernBbox center lat = (65.4 + 65.6) / 2 = 65.5, above 65.1 threshold
       const mockClient = getMockClient([mockSoilFeature]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 

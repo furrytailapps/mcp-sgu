@@ -16,5 +16,7 @@ https://mcp-sgu.vercel.app/mcp
 
 ## Quirks
 
-- Input WGS84, internal SWEREF99TM (auto-converts via proj4)
+- Input WGS84, OGC responses in WGS84 (no coordinate conversion for bbox queries)
+- Corridor mode: converts to SWEREF99TM for buffer math only, converts bbox back to WGS84 for OGC query
+- WMS tools (query-point, get-map) still use SWEREF99TM internally
 - No environment variables needed (public APIs)

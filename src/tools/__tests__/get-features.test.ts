@@ -79,7 +79,7 @@ describe('get-features tool', () => {
       const data = JSON.parse(response.content[0].text);
       expect(data.data_type).toBe('bedrock');
       expect(data.query_type).toBe('bbox');
-      expect(data.coordinate_system).toBe('EPSG:3006');
+      expect(data.coordinate_system).toBe('WGS84');
       expect(data.geometry_detail).toBe('simplified');
       expect(data.count).toBeGreaterThan(0);
       expect(data.number_matched).toBeDefined();

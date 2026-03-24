@@ -55,10 +55,10 @@ export interface SguGroundwaterInfoResponse {
     type: string;
     id?: string;
     properties: {
-      magasin_tx?: string; // Aquifer type
-      jordlager?: string; // Soil layer
-      kapacitet?: string; // Capacity
-      Magasin?: string; // Capitalized variant
+      akvifertyp?: string; // Aquifer type, e.g. "por- och sprickakvifer"
+      genes?: string; // Genesis, e.g. "isälvssediment"
+      infiltrationsmojligheter?: string; // Infiltration possibilities
+      magasinsnamn?: string; // Aquifer name
     };
   }>;
 }
@@ -70,10 +70,8 @@ export interface SguLandslideInfoResponse {
     type: string;
     id?: string;
     properties: {
-      skredtyp?: string; // Landslide type
-      skredtyp_tx?: string; // Landslide type text
-      datum?: string; // Date of landslide
-      Skredtyp?: string; // Capitalized variant
+      Beskrivning?: string; // Description, e.g. "Skredärr i finkornig jordart"
+      symbol?: number;
     };
   }>;
 }
@@ -256,9 +254,9 @@ export function transformGroundwaterInfo(response: SguGroundwaterInfoResponse): 
 
   const props = feature.properties;
   return {
-    aquifer_type: props.magasin_tx || props.Magasin,
-    soil_layer: props.jordlager,
-    capacity: props.kapacitet,
+    aquifer_type: props.akvifertyp,
+    soil_layer: props.genes,
+    capacity: props.infiltrationsmojligheter,
   };
 }
 
@@ -268,9 +266,8 @@ export function transformLandslideInfo(response: SguLandslideInfoResponse): Land
 
   const props = feature.properties;
   return {
-    landslide_type: props.skredtyp || props.Skredtyp || props.skredtyp_tx,
-    date: props.datum,
-    description: props.skredtyp_tx,
+    landslide_type: props.Beskrivning,
+    description: props.Beskrivning,
   };
 }
 
