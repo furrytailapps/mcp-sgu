@@ -3,7 +3,7 @@ import { sguClient } from '@/clients/sgu-client';
 import { withErrorHandling } from '@/lib/response';
 import { processMapToolInput } from '@/lib/map-tool-handler';
 import { BoundingBox } from '@/lib/geometry-utils';
-import { MapResponse, MapOptions } from '@/types/sgu-api';
+import { MapResponse, MapOptions } from '@/types/common-schemas';
 
 const MAP_LAYERS = [
   'bedrock',

@@ -1,16 +1,10 @@
-import { createOgcClient } from '@/lib/ogc-client';
 import { createWmsClient } from '@/lib/wms-client';
-import { BoundingBox, Point, Corridor, corridorToWktPolygon, corridorToBoundingBox } from '@/lib/geometry-utils';
+import { BoundingBox, Point } from '@/lib/geometry-utils';
+import { MapOptions, MapResponse } from '@/types/common-schemas';
 import {
-  SguBedrockFeature,
-  BedrockFeature,
   SoilTypeInfo,
-  MapOptions,
-  MapResponse,
   SguSoilTypeInfoResponse,
-  transformBedrockFeature,
   transformSoilTypeInfo,
-  // Point query types
   SguBedrockInfoResponse,
   SguSoilDepthInfoResponse,
   SguBoulderCoverageInfoResponse,
@@ -35,13 +29,12 @@ import {
   transformGroundwaterVulnerabilityInfo,
   transformRadonRiskInfo,
   transformWellPointInfo,
-} from '@/types/sgu-api';
+} from '@/types/point-queries';
 
 // ============================================================================
 // SGU API Endpoints
 // ============================================================================
 
-const SGU_OGC_BEDROCK_URL = 'https://api.sgu.se/oppnadata/berggrund50k-250k/ogc/features/v1';
 // WMS GetMap endpoints (different from GetCapabilities endpoints)
 const SGU_WMS_BEDROCK_URL = 'https://maps3.sgu.se/geoserver/berg/ows';
 const SGU_WMS_SOIL_TYPES_URL = 'https://maps3.sgu.se/geoserver/jord/ows';
@@ -54,11 +47,6 @@ const SGU_WMS_BALLAST_URL = 'https://resource.sgu.se/service/wms/130/ballast';
 // ============================================================================
 // Client instances
 // ============================================================================
-
-const bedrockOgcClient = createOgcClient({
-  baseUrl: SGU_OGC_BEDROCK_URL,
-  timeout: 30000,
-});
 
 const bedrockWmsClient = createWmsClient({
   baseUrl: SGU_WMS_BEDROCK_URL,
@@ -202,81 +190,16 @@ function createPointQueryMethod<TResponse, TResult>(
 // ============================================================================
 
 export const sguClient = {
-  // When corridor is provided, uses polygon intersection filter; falls back to bbox otherwise
-  async getBedrock(
-    bbox: BoundingBox,
-    limit: number = 100,
-    corridor?: Corridor,
-  ): Promise<{ features: BedrockFeature[]; usedPolygonFilter: boolean }> {
-    let polygonWkt: string | undefined;
-    let usedPolygonFilter = false;
-
-    if (corridor) {
-      try {
-        polygonWkt = corridorToWktPolygon(corridor);
-        usedPolygonFilter = true;
-      } catch {
-        // Fall back to bbox if polygon generation fails
-        polygonWkt = undefined;
-      }
-    }
-
-    try {
-      const features = await bedrockOgcClient.getItems<SguBedrockFeature>('geologisk-enhet-yta', {
-        bbox: usedPolygonFilter ? undefined : bbox,
-        polygonWkt,
-        limit,
-      });
-      return {
-        features: features.map(transformBedrockFeature),
-        usedPolygonFilter,
-      };
-    } catch {
-      // If polygon filter fails (API might not support it), fall back to bbox
-      if (usedPolygonFilter) {
-        const features = await bedrockOgcClient.getItems<SguBedrockFeature>('geologisk-enhet-yta', {
-          bbox,
-          limit,
-        });
-        return {
-          features: features.map(transformBedrockFeature),
-          usedPolygonFilter: false,
-        };
-      }
-      throw new Error('Failed to fetch bedrock data');
-    }
-  },
-
   getBedrockMapUrl: createMapUrlMethod(bedrockWmsClient, BEDROCK_LAYERS, 'bedrock'),
   getSoilTypesMapUrl: createMapUrlMethod(soilTypesWmsClient, SOIL_TYPES_LAYERS, 'soilTypes'),
   getBoulderCoverageMapUrl: createMapUrlMethod(soilTypesWmsClient, BOULDER_COVERAGE_LAYERS, 'boulderCoverage'),
   getSoilDepthMapUrl: createMapUrlMethod(soilTypesWmsClient, SOIL_DEPTH_LAYERS, 'soilDepth'),
 
-  async getSoilTypeAt(point: Point): Promise<SoilTypeInfo | null> {
-    const buffer = 100; // 100 meter buffer
-    const bbox: BoundingBox = {
-      minX: point.x - buffer,
-      minY: point.y - buffer,
-      maxX: point.x + buffer,
-      maxY: point.y + buffer,
-    };
-
-    const width = 256;
-    const height = 256;
-    const pixelX = Math.floor(width / 2);
-    const pixelY = Math.floor(height / 2);
-
-    const response = await soilTypesWmsClient.getFeatureInfo<SguSoilTypeInfoResponse>({
-      layers: SOIL_TYPES_LAYERS,
-      bbox,
-      width,
-      height,
-      x: pixelX,
-      y: pixelY,
-    });
-
-    return transformSoilTypeInfo(response);
-  },
+  getSoilTypeAt: createPointQueryMethod<SguSoilTypeInfoResponse, SoilTypeInfo>(
+    soilTypesWmsClient,
+    SOIL_TYPES_LAYERS,
+    transformSoilTypeInfo,
+  ),
 
   getGroundwaterMapUrl: createMapUrlMethod(groundwaterWmsClient, GROUNDWATER_LAYERS, 'groundwater'),
   getLandslideMapUrl: createMapUrlMethod(soilTypesWmsClient, LANDSLIDE_LAYERS, 'landslide'),

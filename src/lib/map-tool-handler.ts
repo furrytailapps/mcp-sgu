@@ -2,7 +2,7 @@ import { ValidationError } from '@/lib/errors';
 import { BoundingBox, corridorToBoundingBox, validateBbox } from '@/lib/geometry-utils';
 import { wgs84BboxToSweref99, wgs84CoordinatesToSweref99 } from '@/lib/coordinates';
 import { MapToolInput } from '@/types/common-schemas';
-import { MapResponse } from '@/types/sgu-api';
+import { MapResponse } from '@/types/common-schemas';
 
 function hasBboxParams(args: MapToolInput): boolean {
   return args.minLat !== undefined && args.minLon !== undefined && args.maxLat !== undefined && args.maxLon !== undefined;
