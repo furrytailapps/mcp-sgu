@@ -149,7 +149,8 @@ export function transformSoilDepthInfo(response: SguSoilDepthInfoResponse): Soil
   const feature = response.features?.[0];
   if (!feature) return null;
 
-  const depth = feature.properties.jorddjup_10x10m;
+  const raw = feature.properties.jorddjup_10x10m;
+  const depth = raw !== undefined && raw < 255 ? raw : undefined;
   return {
     depth_class: depth !== undefined ? `${depth} m` : undefined,
     depth_description: depth !== undefined ? `Estimated depth to bedrock: ${depth} meters (10m resolution model)` : undefined,
@@ -205,7 +206,8 @@ export function transformRadonRiskInfo(response: SguRadonRiskInfoResponse): Rado
   const feature = response.features?.[0];
   if (!feature) return null;
 
-  const value = feature.properties.gamma_uran;
+  const raw = feature.properties.gamma_uran;
+  const value = raw !== undefined && raw < 1e10 ? raw : undefined;
   let riskLevel: string | undefined;
   if (value !== undefined) {
     if (value < 3) riskLevel = 'low';
