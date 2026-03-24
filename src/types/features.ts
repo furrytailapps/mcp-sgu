@@ -139,6 +139,7 @@ export interface SoilLayerFeature {
   genesis?: string;
   characteristics?: string;
   soil_code?: string;
+  soil_classification?: string;
   geometry?: GeoJsonGeometry;
 }
 
@@ -216,6 +217,7 @@ export function transformSoilLayerFeature(feature: GeoJsonFeature<SguSoilLayerPr
     genesis: props.genes_tx,
     characteristics: props.karakt_tx,
     soil_code: props.lf_kod_tx,
+    soil_classification: props.plkod_txt,
     geometry: feature.geometry,
   };
 }
