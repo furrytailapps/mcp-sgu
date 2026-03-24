@@ -91,6 +91,8 @@ export interface BedrockFeature {
   lithology: string;
   tectonic_unit: string;
   rock_properties?: string;
+  mineral_composition?: string;
+  chemical_composition?: string;
   area_m2?: number;
   geometry?: GeoJsonGeometry;
 }
@@ -157,6 +159,8 @@ export function transformBedrockFeature(feature: GeoJsonFeature<SguBedrockProper
     lithology: props.lito_n_tx || 'Unknown',
     tectonic_unit: props.tekt_n_tx || 'Unknown',
     rock_properties: props.b_prop_tx,
+    mineral_composition: props.min_ss_tx,
+    chemical_composition: props.kem_ss_tx,
     area_m2: props.geom_area,
     geometry: feature.geometry,
   };
