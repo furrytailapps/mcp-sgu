@@ -1,4 +1,6 @@
 import { ValidationError } from './errors';
+import type { GeoJsonGeometry } from '@/types/geojson';
+import type { GeometryDetail } from '@/types/common-schemas';
 
 export const CRS_SWEREF99TM = 'EPSG:3006';
 
@@ -154,4 +156,84 @@ export function bboxCenter(bbox: BoundingBox): Point {
     x: (bbox.minX + bbox.maxX) / 2,
     y: (bbox.minY + bbox.maxY) / 2,
   };
+}
+
+// Douglas-Peucker simplification helpers
+
+const SIMPLIFY_TOLERANCE = 100; // 100 meters in SWEREF99TM
+
+function perpendicularDist(point: number[], lineStart: number[], lineEnd: number[]): number {
+  const [x, y] = point;
+  const [x1, y1] = lineStart;
+  const [x2, y2] = lineEnd;
+  const lenSq = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+  if (lenSq === 0) return Math.sqrt((x - x1) ** 2 + (y - y1) ** 2);
+  return Math.abs((y2 - y1) * x - (x2 - x1) * y + x2 * y1 - y2 * x1) / Math.sqrt(lenSq);
+}
+
+function simplifyRing(coords: number[][], tolerance: number): number[][] {
+  if (coords.length <= 2) return coords;
+  let maxDist = 0;
+  let maxIndex = 0;
+  const first = coords[0];
+  const last = coords[coords.length - 1];
+  for (let i = 1; i < coords.length - 1; i++) {
+    const dist = perpendicularDist(coords[i], first, last);
+    if (dist > maxDist) {
+      maxDist = dist;
+      maxIndex = i;
+    }
+  }
+  if (maxDist > tolerance) {
+    const left = simplifyRing(coords.slice(0, maxIndex + 1), tolerance);
+    const right = simplifyRing(coords.slice(maxIndex), tolerance);
+    return [...left.slice(0, -1), ...right];
+  }
+  return [first, last];
+}
+
+function truncateCoord(n: number): number {
+  return Math.round(n * 1e6) / 1e6;
+}
+
+function truncateCoords(coords: number[][]): number[][] {
+  return coords.map((c) => c.map(truncateCoord));
+}
+
+export function simplifyGeometry(geometry: GeoJsonGeometry, detail: GeometryDetail): GeoJsonGeometry | undefined {
+  if (detail === 'none') return undefined;
+
+  if (geometry.type === 'Point') {
+    const coords = geometry.coordinates as number[];
+    return { type: 'Point', coordinates: coords.map(truncateCoord) };
+  }
+
+  if (geometry.type === 'LineString') {
+    const coords = geometry.coordinates as number[][];
+    const simplified = detail === 'simplified' ? simplifyRing(coords, SIMPLIFY_TOLERANCE) : coords;
+    return { type: 'LineString', coordinates: truncateCoords(simplified) };
+  }
+
+  if (geometry.type === 'Polygon') {
+    const rings = geometry.coordinates as number[][][];
+    const processed = rings.map((ring) => {
+      const simplified = detail === 'simplified' ? simplifyRing(ring, SIMPLIFY_TOLERANCE) : ring;
+      return truncateCoords(simplified);
+    });
+    return { type: 'Polygon', coordinates: processed };
+  }
+
+  if (geometry.type === 'MultiPolygon') {
+    const polygons = geometry.coordinates as number[][][][];
+    const processed = polygons.map((rings) =>
+      rings.map((ring) => {
+        const simplified = detail === 'simplified' ? simplifyRing(ring, SIMPLIFY_TOLERANCE) : ring;
+        return truncateCoords(simplified);
+      }),
+    );
+    return { type: 'MultiPolygon', coordinates: processed };
+  }
+
+  // Fallback: return geometry unchanged for unhandled types
+  return geometry;
 }

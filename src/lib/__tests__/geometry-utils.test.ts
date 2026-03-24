@@ -10,10 +10,12 @@ import {
   bboxDimensions,
   bboxCenter,
   CRS_SWEREF99TM,
+  simplifyGeometry,
   type BoundingBox,
   type Corridor,
 } from '../geometry-utils';
 import { ValidationError } from '../errors';
+import type { GeoJsonGeometry } from '@/types/geojson';
 
 describe('geometry-utils', () => {
   describe('CRS_SWEREF99TM', () => {
@@ -232,5 +234,78 @@ describe('geometry-utils', () => {
       expect(center.x).toBe(675000);
       expect(center.y).toBe(6580000);
     });
+  });
+});
+
+describe('simplifyGeometry', () => {
+  const polygonGeometry: GeoJsonGeometry = {
+    type: 'Polygon',
+    coordinates: [[
+      [670000, 6570000], [670050, 6570010], [670100, 6570000],
+      [670150, 6570020], [670200, 6570000], [670200, 6580000],
+      [670000, 6580000], [670000, 6570000],
+    ]],
+  };
+
+  const pointGeometry: GeoJsonGeometry = {
+    type: 'Point',
+    coordinates: [670000.123456789, 6570000.987654321],
+  };
+
+  it("returns undefined for detail === 'none' with polygon", () => {
+    expect(simplifyGeometry(polygonGeometry, 'none')).toBeUndefined();
+  });
+
+  it("returns undefined for detail === 'none' with point", () => {
+    expect(simplifyGeometry(pointGeometry, 'none')).toBeUndefined();
+  });
+
+  it("simplifies polygon with detail === 'simplified' (fewer coords than original)", () => {
+    const result = simplifyGeometry(polygonGeometry, 'simplified');
+    expect(result).toBeDefined();
+    expect(result!.type).toBe('Polygon');
+    const originalCoords = (polygonGeometry.coordinates as number[][][])[0];
+    const resultCoords = (result!.coordinates as number[][][])[0];
+    expect(resultCoords.length).toBeLessThan(originalCoords.length);
+  });
+
+  it("truncates point coords to 6 decimals with detail === 'simplified'", () => {
+    const result = simplifyGeometry(pointGeometry, 'simplified');
+    expect(result).toBeDefined();
+    expect(result!.type).toBe('Point');
+    const coords = result!.coordinates as number[];
+    expect(coords[0]).toBe(670000.123457);
+    expect(coords[1]).toBe(6570000.987654);
+  });
+
+  it("returns all coords with truncation for detail === 'full'", () => {
+    const result = simplifyGeometry(polygonGeometry, 'full');
+    expect(result).toBeDefined();
+    expect(result!.type).toBe('Polygon');
+    const originalCoords = (polygonGeometry.coordinates as number[][][])[0];
+    const resultCoords = (result!.coordinates as number[][][])[0];
+    // 'full' preserves all coordinates (no simplification), just truncates
+    expect(resultCoords.length).toBe(originalCoords.length);
+  });
+
+  it('handles MultiPolygon correctly', () => {
+    const multiPolygon: GeoJsonGeometry = {
+      type: 'MultiPolygon',
+      coordinates: [
+        [[[670000, 6570000], [670050, 6570010], [670100, 6570000], [670200, 6580000], [670000, 6580000], [670000, 6570000]]],
+        [[[680000, 6570000], [680050, 6570010], [680100, 6570000], [680200, 6580000], [680000, 6580000], [680000, 6570000]]],
+      ],
+    };
+
+    const resultNone = simplifyGeometry(multiPolygon, 'none');
+    expect(resultNone).toBeUndefined();
+
+    const resultFull = simplifyGeometry(multiPolygon, 'full');
+    expect(resultFull).toBeDefined();
+    expect(resultFull!.type).toBe('MultiPolygon');
+
+    const resultSimplified = simplifyGeometry(multiPolygon, 'simplified');
+    expect(resultSimplified).toBeDefined();
+    expect(resultSimplified!.type).toBe('MultiPolygon');
   });
 });
