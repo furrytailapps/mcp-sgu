@@ -101,11 +101,16 @@ async function queryOgcEndpoint(
 // Below: use 25k-100k scale; above: use 250k scale (only 250k covers the far north).
 const NORTH_SOUTHING_THRESHOLD = 7230000;
 
+// Each transform is strongly typed (e.g. GeoJsonFeature<SguBedrockProperties> => BedrockFeature)
+// but the registry needs a common type. The casts are safe because the registry pairs each
+// transform with its matching OGC endpoint — bedrock endpoint always returns bedrock features, etc.
+type RegistryTransform = (feature: GeoJsonFeature) => Record<string, unknown>;
+
 const FEATURE_REGISTRY: Record<FeatureDataType, FeatureTypeConfig> = {
   bedrock: {
     getClient: getBedrockClient,
     collection: 'geologisk-enhet-yta',
-    transform: transformBedrockFeature as unknown as (feature: GeoJsonFeature) => Record<string, unknown>,
+    transform: transformBedrockFeature as unknown as RegistryTransform,
   },
 
   soil_type: {
@@ -115,25 +120,25 @@ const FEATURE_REGISTRY: Record<FeatureDataType, FeatureTypeConfig> = {
         centerNorthing > NORTH_SOUTHING_THRESHOLD ? getSoilType250kClient() : getSoilType25kClient();
       return queryOgcEndpoint(client, 'grundlager', bbox, limit, corridor);
     },
-    transform: transformSoilFeature as unknown as (feature: GeoJsonFeature) => Record<string, unknown>,
+    transform: transformSoilFeature as unknown as RegistryTransform,
   },
 
   groundwater_aquifers: {
     getClient: getGroundwaterClient,
     collection: 'grundvattenmagasin',
-    transform: transformAquiferFeature as unknown as (feature: GeoJsonFeature) => Record<string, unknown>,
+    transform: transformAquiferFeature as unknown as RegistryTransform,
   },
 
   wells: {
     getClient: getWellsClient,
     collection: 'brunnar',
-    transform: transformWellFeature as unknown as (feature: GeoJsonFeature) => Record<string, unknown>,
+    transform: transformWellFeature as unknown as RegistryTransform,
   },
 
   soil_layers: {
     getClient: getSoilLayersClient,
     collection: 'lagerinformation',
-    transform: transformSoilLayerFeature as unknown as (feature: GeoJsonFeature) => Record<string, unknown>,
+    transform: transformSoilLayerFeature as unknown as RegistryTransform,
   },
 };
 
