@@ -87,8 +87,7 @@ const northernBbox: BoundingBox = {
 // Helpers
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getMockClient(features: any[], numberMatched = 100) {
+function getMockClient(features: Record<string, unknown>[], numberMatched = 100) {
   return {
     getItemsWithCount: vi.fn().mockResolvedValue({ features, numberMatched }),
     getItems: vi.fn(),
