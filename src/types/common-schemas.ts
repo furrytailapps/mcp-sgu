@@ -84,3 +84,46 @@ export type MapToolInput = {
   height?: number;
   format?: 'png' | 'jpeg';
 };
+
+export const geometryDetailSchema = z
+  .enum(['none', 'simplified', 'full'])
+  .optional()
+  .describe(
+    "Geometry detail: 'none' (properties only), 'simplified' (default, reduced coordinates), 'full' (all coordinates)",
+  );
+
+export type GeometryDetail = 'none' | 'simplified' | 'full';
+
+export const featureDataTypes = [
+  'bedrock',
+  'soil_type',
+  'groundwater_aquifers',
+  'wells',
+  'soil_layers',
+] as const;
+
+export type FeatureDataType = (typeof featureDataTypes)[number];
+
+export const featureDataTypeSchema = z
+  .enum(featureDataTypes)
+  .describe(
+    'Data type: bedrock (rock types/formations), soil_type (surface soil classification), ' +
+      'groundwater_aquifers (aquifer boundaries/properties), wells (registered wells with depth/capacity), ' +
+      'soil_layers (soil layer sequences with depth data)',
+  );
+
+export const limitSchema = z.number().optional().describe('Max features to return (1-1000, default: 50)');
+
+export interface MapOptions {
+  width?: number;
+  height?: number;
+  format?: 'png' | 'jpeg';
+}
+
+export interface MapResponse {
+  map_url: string;
+  legend_url: string;
+  bbox: { minX: number; minY: number; maxX: number; maxY: number };
+  coordinate_system: string;
+  layers: string[];
+}
