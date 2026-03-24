@@ -10,21 +10,19 @@ export default function Home() {
       <h2>Available Tools</h2>
       <ul>
         <li>
-          <strong>sgu_get_bedrock</strong> - Get bedrock geology data for an area (OGC API Features)
+          <strong>sgu_query_point</strong> - Query geological data at a specific coordinate (9 data types via enum)
         </li>
         <li>
-          <strong>sgu_get_bedrock_map</strong> - Get a rendered map image URL of bedrock geology (WMS)
+          <strong>sgu_get_map</strong> - Get rendered map images for an area (WMS, multiple layer types)
         </li>
         <li>
-          <strong>sgu_get_soil_types_map</strong> - Get a rendered map image URL of soil types (WMS)
-        </li>
-        <li>
-          <strong>sgu_get_soil_type_at_point</strong> - Get soil type information at a specific coordinate (WMS GetFeatureInfo)
+          <strong>sgu_get_features</strong> - Get geological features for an area (5 data types via OGC API, geometry detail
+          levels)
         </li>
       </ul>
 
       <h2>Coordinate System</h2>
-      <p>All coordinates use SWEREF99TM (EPSG:3006), the Swedish national grid system.</p>
+      <p>Input coordinates use WGS84 (latitude/longitude), converted internally to SWEREF99TM (EPSG:3006).</p>
 
       <h2>MCP Endpoints</h2>
       <ul>
