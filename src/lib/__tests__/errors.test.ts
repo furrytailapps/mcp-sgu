@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { McpToolError, UpstreamApiError, NotFoundError, ValidationError } from '../errors';
+import { McpToolError, UpstreamApiError, ValidationError } from '../errors';
 
 describe('errors', () => {
   describe('McpToolError', () => {
@@ -52,28 +52,6 @@ describe('errors', () => {
 
     it('should be instanceof McpToolError', () => {
       const error = new UpstreamApiError('test', 500, 'test');
-      expect(error).toBeInstanceOf(McpToolError);
-    });
-  });
-
-  describe('NotFoundError', () => {
-    it('should create error with resource type and identifier', () => {
-      const error = new NotFoundError('Feature', 'abc123');
-      expect(error.message).toBe('Feature not found: abc123');
-      expect(error.code).toBe('NOT_FOUND');
-      expect(error.name).toBe('NotFoundError');
-    });
-
-    it('should include resourceType and identifier in details', () => {
-      const error = new NotFoundError('Bedrock unit', 'unit-456');
-      expect(error.details).toEqual({
-        resourceType: 'Bedrock unit',
-        identifier: 'unit-456',
-      });
-    });
-
-    it('should be instanceof McpToolError', () => {
-      const error = new NotFoundError('test', 'id');
       expect(error).toBeInstanceOf(McpToolError);
     });
   });
