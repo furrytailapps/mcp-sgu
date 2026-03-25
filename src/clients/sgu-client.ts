@@ -158,9 +158,10 @@ function createPointQueryMethod<TResponse, TResult>(
   wmsClient: ReturnType<typeof createWmsClient>,
   layers: string[],
   transform: (response: TResponse) => TResult | null,
+  bufferMeters: number = 100,
 ): (point: Point) => Promise<TResult | null> {
   return async (point: Point): Promise<TResult | null> => {
-    const buffer = 100; // 100 meter buffer
+    const buffer = bufferMeters;
     const bbox: BoundingBox = {
       minX: point.x - buffer,
       minY: point.y - buffer,
@@ -241,6 +242,7 @@ export const sguClient = {
     soilTypesWmsClient,
     LANDSLIDE_LAYERS,
     transformLandslideInfo,
+    2000, // MinScaleDenominator requires ≥2km bbox
   ),
 
   getGroundwaterVulnerabilityAt: createPointQueryMethod<SguGroundwaterVulnerabilityInfoResponse, GroundwaterVulnerabilityInfo>(

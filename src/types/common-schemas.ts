@@ -114,6 +114,40 @@ export const featureDataTypeSchema = z
 
 export const limitSchema = z.number().optional().describe('Max features to return (1-1000, default: 50)');
 
+// ============================================================================
+// Unified query schemas (sgu_query)
+// ============================================================================
+
+export const dataTypes = [
+  'bedrock',
+  'soil_type',
+  'groundwater_aquifers',
+  'wells',
+  'soil_layers',
+  'radon_risk',
+  'soil_depth',
+  'groundwater_vulnerability',
+  'landslide',
+] as const;
+
+export type DataType = (typeof dataTypes)[number];
+
+export const dataTypesSchema = z
+  .union([z.array(z.enum(dataTypes)), z.literal('all')])
+  .describe(
+    'Data types to query. Array of: bedrock, soil_type, groundwater_aquifers, wells, soil_layers, ' +
+      'radon_risk, soil_depth, groundwater_vulnerability, landslide. Or "all" for everything.',
+  );
+
+export const pointsSchema = z
+  .array(z.object({ latitude: z.number(), longitude: z.number() }))
+  .describe('Query points [{latitude, longitude}, ...]. One point = site assessment. Multiple = corridor sampling.');
+
+export const radiusKmSchema = z
+  .number()
+  .optional()
+  .describe('Search radius in km around the points (default: 0.2). Controls bbox size for area queries.');
+
 export interface MapOptions {
   width?: number;
   height?: number;
