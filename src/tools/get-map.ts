@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { sguClient } from '@/clients/sgu-client';
 import { withErrorHandling } from '@/lib/response';
-import { processMapToolInput } from '@/lib/map-tool-handler';
-import { BoundingBox } from '@/lib/geometry-utils';
+import { ValidationError } from '@/lib/errors';
+import { BoundingBox, corridorToBoundingBox, validateBbox } from '@/lib/geometry-utils';
+import { wgs84BboxToSweref99, wgs84CoordinatesToSweref99 } from '@/lib/coordinates';
 import {
   minLatSchema,
   minLonSchema,
@@ -103,8 +104,36 @@ const MAP_METHODS: Record<MapLayer, (bbox: BoundingBox, options: MapOptions) => 
   rock_deposits: sguClient.getRockDepositsMapUrl,
 };
 
+function processMapInput(args: GetMapInput): BoundingBox {
+  const hasBbox =
+    args.minLat !== undefined && args.minLon !== undefined && args.maxLat !== undefined && args.maxLon !== undefined;
+  const hasCorridor = args.coordinates !== undefined && args.coordinates.length >= 2;
+
+  if (!hasBbox && !hasCorridor) {
+    throw new ValidationError(
+      'Either bbox (minLat, minLon, maxLat, maxLon) or corridor (coordinates array with [{latitude, longitude}, ...]) must be provided',
+    );
+  }
+
+  if (hasCorridor) {
+    const sweref99Coords = wgs84CoordinatesToSweref99(args.coordinates!);
+    const bbox = corridorToBoundingBox({ coordinates: sweref99Coords, bufferMeters: args.bufferMeters ?? 500 });
+    validateBbox(bbox);
+    return bbox;
+  }
+
+  const bbox = wgs84BboxToSweref99({
+    minLat: args.minLat!,
+    minLon: args.minLon!,
+    maxLat: args.maxLat!,
+    maxLon: args.maxLon!,
+  });
+  validateBbox(bbox);
+  return bbox;
+}
+
 export const getMapHandler = withErrorHandling(async (args: GetMapInput) => {
-  const bbox = processMapToolInput(args);
+  const bbox = processMapInput(args);
   const getMapUrl = MAP_METHODS[args.layer];
   const mapResponse = getMapUrl(bbox, {
     width: args.width,
