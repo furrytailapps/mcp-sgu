@@ -56,17 +56,10 @@ export type SguWellPointInfoResponse = WmsInfoResponse<{
 }>;
 
 export type SguSoilTypeInfoResponse = WmsInfoResponse<{
-  Jordart?: string; // Soil type (e.g. "Morän", "Isälvssediment")
-  Kartering?: string;
-  Karttyp?: number;
-  symbol?: number;
-  grundlager?: string;
-  jordart_tx?: string;
-  jordart?: string;
-  underlag?: string;
-  tunt_ytlager?: string;
-  landform?: string;
-  blockighet?: string;
+  Jordart?: string; // Soil type (e.g. "Morän", "Fyllning", "Silt")
+  Kartering?: string; // Survey ID
+  Karttyp?: number; // Map type code
+  symbol?: number; // Symbol code
 }>;
 
 // ============================================================================
@@ -119,11 +112,7 @@ export interface WellPointInfo {
 }
 
 export interface SoilTypeInfo {
-  surface_layer?: string;
-  underlying_layer?: string;
-  thin_surface_layer?: string;
-  landform?: string;
-  boulder_coverage?: string;
+  soil_type?: string;
 }
 
 // ============================================================================
@@ -237,14 +226,7 @@ export function transformSoilTypeInfo(response: SguSoilTypeInfoResponse): SoilTy
   const feature = response.features?.[0];
   if (!feature) return null;
 
-  const props = feature.properties;
-  // Handle both capitalized (new) and lowercase (legacy) property names
-  const soilType = props.Jordart || props.grundlager || props.jordart_tx || props.jordart;
   return {
-    surface_layer: soilType,
-    underlying_layer: props.underlag,
-    thin_surface_layer: props.tunt_ytlager,
-    landform: props.landform,
-    boulder_coverage: props.blockighet,
+    soil_type: feature.properties.Jordart,
   };
 }
