@@ -56,10 +56,10 @@ export type SguWellPointInfoResponse = WmsInfoResponse<{
 }>;
 
 export type SguSoilTypeInfoResponse = WmsInfoResponse<{
-  Jordart?: string; // Soil type (e.g. "Morän", "Fyllning", "Silt")
-  Kartering?: string; // Survey ID
+  Jordart?: string; // Soil type (e.g. "Morän", "Fyllning", "Isälvssediment")
+  Kartering?: string; // Survey code
   Karttyp?: number; // Map type code
-  symbol?: number; // Symbol code
+  symbol?: number; // Symbol number
 }>;
 
 // ============================================================================
