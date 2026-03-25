@@ -81,56 +81,6 @@ export function corridorToBoundingBox(corridor: Corridor): BoundingBox {
   };
 }
 
-// Creates an approximate polygon by offsetting the line on both sides
-export function corridorToWktPolygon(corridor: Corridor): string {
-  if (corridor.coordinates.length < 2) {
-    throw new ValidationError('Corridor must have at least 2 coordinate pairs', 'corridor');
-  }
-
-  const buffer = corridor.bufferMeters;
-  const coords = corridor.coordinates;
-
-  const leftSide: { x: number; y: number }[] = [];
-  const rightSide: { x: number; y: number }[] = [];
-
-  for (let i = 0; i < coords.length; i++) {
-    const { x, y } = coords[i];
-
-    let dx: number, dy: number;
-
-    if (i === 0) {
-      dx = coords[1].x - x;
-      dy = coords[1].y - y;
-    } else if (i === coords.length - 1) {
-      dx = x - coords[i - 1].x;
-      dy = y - coords[i - 1].y;
-    } else {
-      // Average of incoming and outgoing directions
-      const dx1 = x - coords[i - 1].x;
-      const dy1 = y - coords[i - 1].y;
-      const dx2 = coords[i + 1].x - x;
-      const dy2 = coords[i + 1].y - y;
-      dx = dx1 + dx2;
-      dy = dy1 + dy2;
-    }
-
-    // Rotate 90 degrees for perpendicular offset
-    const len = Math.sqrt(dx * dx + dy * dy);
-    if (len === 0) continue;
-
-    const perpX = -dy / len;
-    const perpY = dx / len;
-
-    leftSide.push({ x: x + perpX * buffer, y: y + perpY * buffer });
-    rightSide.push({ x: x - perpX * buffer, y: y - perpY * buffer });
-  }
-
-  const polygonCoords = [...leftSide, ...rightSide.reverse(), leftSide[0]];
-
-  const coordString = polygonCoords.map(({ x, y }) => `${x} ${y}`).join(', ');
-  return `POLYGON((${coordString}))`;
-}
-
 // Douglas-Peucker simplification helpers
 
 // ~100m at Swedish latitudes in WGS84 degrees (1 degree lat ≈ 111km, 0.001° ≈ 111m)

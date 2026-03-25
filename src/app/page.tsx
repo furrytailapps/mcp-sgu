@@ -10,14 +10,10 @@ export default function Home() {
       <h2>Available Tools</h2>
       <ul>
         <li>
-          <strong>sgu_query_point</strong> - Query geological data at a specific coordinate (9 data types via enum)
+          <strong>sgu_query</strong> - Query geological data at one or more points (9 data types, OGC area + WMS point)
         </li>
         <li>
           <strong>sgu_get_map</strong> - Get rendered map images for an area (WMS, multiple layer types)
-        </li>
-        <li>
-          <strong>sgu_get_features</strong> - Get geological features for an area (5 data types via OGC API, geometry detail
-          levels)
         </li>
       </ul>
 

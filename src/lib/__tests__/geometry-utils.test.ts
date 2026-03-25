@@ -4,7 +4,6 @@ import {
   validateBbox,
   bboxToString,
   corridorToBoundingBox,
-  corridorToWktPolygon,
   simplifyGeometry,
   type BoundingBox,
   type Corridor,
@@ -147,29 +146,6 @@ describe('geometry-utils', () => {
       expect(bbox.minY).toBe(6569950);
       expect(bbox.maxX).toBe(680050);
       expect(bbox.maxY).toBe(6580050);
-    });
-  });
-
-  describe('corridorToWktPolygon', () => {
-    it('should convert corridor to WKT polygon', () => {
-      const corridor: Corridor = {
-        coordinates: [
-          { x: 670000, y: 6570000 },
-          { x: 670000, y: 6580000 },
-        ],
-        bufferMeters: 100,
-      };
-      const wkt = corridorToWktPolygon(corridor);
-      expect(wkt).toMatch(/^POLYGON\(\(/);
-      expect(wkt).toMatch(/\)\)$/);
-    });
-
-    it('should throw for corridor with less than 2 points', () => {
-      const corridor: Corridor = {
-        coordinates: [{ x: 670000, y: 6570000 }],
-        bufferMeters: 100,
-      };
-      expect(() => corridorToWktPolygon(corridor)).toThrow(ValidationError);
     });
   });
 
