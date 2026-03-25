@@ -55,36 +55,6 @@ export const heightSchema = z.number().optional().describe('Image height in pixe
 
 export const formatSchema = z.enum(['png', 'jpeg']).optional().describe('Image format (default: png)');
 
-export const mapToolInputSchema = {
-  // Bbox mode parameters (WGS84)
-  minLat: minLatSchema,
-  minLon: minLonSchema,
-  maxLat: maxLatSchema,
-  maxLon: maxLonSchema,
-  // Corridor mode parameters (WGS84)
-  coordinates: coordinatesSchema,
-  bufferMeters: bufferMetersSchema,
-  // Image parameters
-  width: widthSchema,
-  height: heightSchema,
-  format: formatSchema,
-};
-
-export type MapToolInput = {
-  // Bbox mode (WGS84)
-  minLat?: number;
-  minLon?: number;
-  maxLat?: number;
-  maxLon?: number;
-  // Corridor mode (WGS84)
-  coordinates?: { latitude: number; longitude: number }[];
-  bufferMeters?: number;
-  // Image options
-  width?: number;
-  height?: number;
-  format?: 'png' | 'jpeg';
-};
-
 export const geometryDetailSchema = z
   .enum(['none', 'simplified', 'full'])
   .optional()
