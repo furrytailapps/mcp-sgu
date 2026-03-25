@@ -1,14 +1,11 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
-// Consolidated tools
-import { queryPointTool, queryPointHandler } from './query-point';
+import { sguQueryTool, sguQueryHandler } from './sgu-query';
 import { getMapTool, getMapHandler } from './get-map';
-import { getFeaturesTool, getFeaturesHandler } from './get-features';
 
 const tools = [
-  { definition: queryPointTool, handler: queryPointHandler },
+  { definition: sguQueryTool, handler: sguQueryHandler },
   { definition: getMapTool, handler: getMapHandler },
-  { definition: getFeaturesTool, handler: getFeaturesHandler },
 ];
 
 export function registerAllTools(server: McpServer): void {
