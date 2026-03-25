@@ -2,30 +2,18 @@ import { createWmsClient } from '@/lib/wms-client';
 import { BoundingBox, Point } from '@/lib/geometry-utils';
 import { MapOptions, MapResponse } from '@/types/common-schemas';
 import {
-  SoilTypeInfo,
-  SguSoilTypeInfoResponse,
-  transformSoilTypeInfo,
-  SguBedrockInfoResponse,
   SguSoilDepthInfoResponse,
-  SguGroundwaterInfoResponse,
   SguLandslideInfoResponse,
   SguGroundwaterVulnerabilityInfoResponse,
   SguRadonRiskInfoResponse,
-  SguWellPointInfoResponse,
-  BedrockInfo,
   SoilDepthInfo,
-  GroundwaterInfo,
   LandslideInfo,
   GroundwaterVulnerabilityInfo,
   RadonRiskInfo,
-  WellPointInfo,
-  transformBedrockInfo,
   transformSoilDepthInfo,
-  transformGroundwaterInfo,
   transformLandslideInfo,
   transformGroundwaterVulnerabilityInfo,
   transformRadonRiskInfo,
-  transformWellPointInfo,
 } from '@/types/point-queries';
 
 // ============================================================================
@@ -192,17 +180,14 @@ function createPointQueryMethod<TResponse, TResult>(
 // ============================================================================
 
 export const sguClient = {
+  // ==========================================================================
+  // Map URL Methods (WMS GetMap) — used by get-map.ts
+  // ==========================================================================
+
   getBedrockMapUrl: createMapUrlMethod(bedrockWmsClient, BEDROCK_LAYERS, 'bedrock'),
   getSoilTypesMapUrl: createMapUrlMethod(soilTypesWmsClient, SOIL_TYPES_LAYERS, 'soilTypes'),
   getBoulderCoverageMapUrl: createMapUrlMethod(soilTypesWmsClient, BOULDER_COVERAGE_LAYERS, 'boulderCoverage'),
   getSoilDepthMapUrl: createMapUrlMethod(soilDepthWmsClient, SOIL_DEPTH_LAYERS, 'soilDepth'),
-
-  getSoilTypeAt: createPointQueryMethod<SguSoilTypeInfoResponse, SoilTypeInfo>(
-    soilTypesWmsClient,
-    SOIL_TYPES_LAYERS,
-    transformSoilTypeInfo,
-  ),
-
   getGroundwaterMapUrl: createMapUrlMethod(groundwaterWmsClient, GROUNDWATER_LAYERS, 'groundwater'),
   getLandslideMapUrl: createMapUrlMethod(soilTypesWmsClient, LANDSLIDE_LAYERS, 'landslide'),
   getRadonRiskMapUrl: createMapUrlMethod(gammaWmsClient, RADON_RISK_LAYERS, 'radonRisk'),
@@ -212,18 +197,17 @@ export const sguClient = {
     GROUNDWATER_VULNERABILITY_LAYERS,
     'groundwaterVulnerability',
   ),
-
   getGravelDepositsMapUrl: createMapUrlMethod(ballastWmsClient, GRAVEL_DEPOSITS_LAYERS, 'gravelDeposits'),
   getRockDepositsMapUrl: createMapUrlMethod(ballastWmsClient, ROCK_DEPOSITS_LAYERS, 'rockDeposits'),
 
   // ==========================================================================
-  // Point Query Methods (WMS GetFeatureInfo)
+  // Point Query Methods (WMS GetFeatureInfo) — used by data-registry.ts
   // ==========================================================================
 
-  getBedrockAt: createPointQueryMethod<SguBedrockInfoResponse, BedrockInfo>(
-    bedrockWmsClient,
-    BEDROCK_LAYERS,
-    transformBedrockInfo,
+  getRadonRiskAt: createPointQueryMethod<SguRadonRiskInfoResponse, RadonRiskInfo>(
+    gammaWmsClient,
+    RADON_RISK_LAYERS,
+    transformRadonRiskInfo,
   ),
 
   getSoilDepthAt: createPointQueryMethod<SguSoilDepthInfoResponse, SoilDepthInfo>(
@@ -232,10 +216,10 @@ export const sguClient = {
     transformSoilDepthInfo,
   ),
 
-  getGroundwaterAt: createPointQueryMethod<SguGroundwaterInfoResponse, GroundwaterInfo>(
+  getGroundwaterVulnerabilityAt: createPointQueryMethod<SguGroundwaterVulnerabilityInfoResponse, GroundwaterVulnerabilityInfo>(
     groundwaterWmsClient,
-    GROUNDWATER_LAYERS,
-    transformGroundwaterInfo,
+    GROUNDWATER_VULNERABILITY_LAYERS,
+    transformGroundwaterVulnerabilityInfo,
   ),
 
   getLandslideAt: createPointQueryMethod<SguLandslideInfoResponse, LandslideInfo>(
@@ -243,23 +227,5 @@ export const sguClient = {
     LANDSLIDE_LAYERS,
     transformLandslideInfo,
     2000, // MinScaleDenominator requires ≥2km bbox
-  ),
-
-  getGroundwaterVulnerabilityAt: createPointQueryMethod<SguGroundwaterVulnerabilityInfoResponse, GroundwaterVulnerabilityInfo>(
-    groundwaterWmsClient,
-    GROUNDWATER_VULNERABILITY_LAYERS,
-    transformGroundwaterVulnerabilityInfo,
-  ),
-
-  getRadonRiskAt: createPointQueryMethod<SguRadonRiskInfoResponse, RadonRiskInfo>(
-    gammaWmsClient,
-    RADON_RISK_LAYERS,
-    transformRadonRiskInfo,
-  ),
-
-  getWellAt: createPointQueryMethod<SguWellPointInfoResponse, WellPointInfo>(
-    wellsWmsClient,
-    WELLS_LAYERS,
-    transformWellPointInfo,
   ),
 };
