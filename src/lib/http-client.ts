@@ -1,13 +1,47 @@
+import https from 'node:https';
 import { UpstreamApiError } from './errors';
 
 interface HttpClientConfig {
   baseUrl: string;
   timeout?: number;
   headers?: Record<string, string>;
+  // WORKAROUND: api.sgu.se has intermittent SSL cert issues. Only enable for that host.
+  skipSslVerification?: boolean;
+}
+
+// node:https GET with optional SSL bypass — used when skipSslVerification is true
+function httpsGet(url: string, requestHeaders: Record<string, string>, timeoutMs: number): Promise<Response> {
+  return new Promise((resolve, reject) => {
+    const agent = new https.Agent({ rejectUnauthorized: false });
+    const parsedUrl = new URL(url);
+
+    const req = https.request(
+      parsedUrl,
+      { agent, headers: requestHeaders, timeout: timeoutMs },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf-8');
+          resolve(new Response(body, {
+            status: res.statusCode ?? 0,
+            statusText: res.statusMessage,
+            headers: res.headers as Record<string, string>,
+          }));
+        });
+      },
+    );
+    req.on('error', reject);
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('AbortError'));
+    });
+    req.end();
+  });
 }
 
 export function createHttpClient(config: HttpClientConfig) {
-  const { baseUrl, timeout = 30000, headers = {} } = config;
+  const { baseUrl, timeout = 30000, headers = {}, skipSslVerification = false } = config;
 
   async function request<T>(
     path: string,
@@ -39,19 +73,20 @@ export function createHttpClient(config: HttpClientConfig) {
       });
     }
 
+    const requestHeaders = { Accept: 'application/json, text/plain, */*', ...headers };
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const response = await fetch(url.toString(), {
-        method,
-        headers: {
-          Accept: 'application/json, text/plain, */*',
-          ...headers,
-        },
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-      });
+      const response = skipSslVerification
+        ? await httpsGet(url.toString(), requestHeaders, timeout)
+        : await fetch(url.toString(), {
+            method,
+            headers: requestHeaders,
+            body: body ? JSON.stringify(body) : undefined,
+            signal: controller.signal,
+          });
 
       clearTimeout(timeoutId);
 
@@ -78,7 +113,7 @@ export function createHttpClient(config: HttpClientConfig) {
       clearTimeout(timeoutId);
       if (error instanceof UpstreamApiError) throw error;
 
-      if (error instanceof Error && error.name === 'AbortError') {
+      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'AbortError')) {
         throw new UpstreamApiError(
           'The request timed out. The data service may be slow — try again or use a smaller search area.',
           0,

@@ -35,6 +35,8 @@ export function createOgcClient(config: OgcClientConfig) {
     headers: {
       Accept: 'application/geo+json, application/json',
     },
+    // WORKAROUND: api.sgu.se has intermittent SSL cert issues
+    skipSslVerification: config.baseUrl.includes('api.sgu.se'),
   });
 
   // Supports bbox or polygon WKT filter (polygon takes precedence)
