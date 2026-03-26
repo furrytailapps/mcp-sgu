@@ -147,6 +147,8 @@ function createPointQueryMethod<TResponse, TResult>(
   layers: string[],
   transform: (response: TResponse) => TResult | null,
   bufferMeters: number = 100,
+  // Sparse polygon layers (e.g. landslide) need grid scanning — center pixel often misses
+  gridScan: boolean = false,
 ): (point: Point) => Promise<TResult | null> {
   return async (point: Point): Promise<TResult | null> => {
     const buffer = bufferMeters;
@@ -159,19 +161,36 @@ function createPointQueryMethod<TResponse, TResult>(
 
     const width = 256;
     const height = 256;
-    const pixelX = Math.floor(width / 2);
-    const pixelY = Math.floor(height / 2);
 
-    const response = await wmsClient.getFeatureInfo<TResponse>({
-      layers,
-      bbox,
-      width,
-      height,
-      x: pixelX,
-      y: pixelY,
-    });
+    if (!gridScan) {
+      const response = await wmsClient.getFeatureInfo<TResponse>({
+        layers,
+        bbox,
+        width,
+        height,
+        x: Math.floor(width / 2),
+        y: Math.floor(height / 2),
+      });
+      return transform(response);
+    }
 
-    return transform(response);
+    // Grid scan: check 3x3 grid of pixels across the bbox for sparse polygon layers
+    const positions = [128, 64, 192]; // center, 25%, 75%
+    for (const x of positions) {
+      for (const y of positions) {
+        const response = await wmsClient.getFeatureInfo<TResponse>({
+          layers,
+          bbox,
+          width,
+          height,
+          x,
+          y,
+        });
+        const result = transform(response);
+        if (result !== null) return result;
+      }
+    }
+    return null;
   };
 }
 
@@ -227,5 +246,6 @@ export const sguClient = {
     LANDSLIDE_LAYERS,
     transformLandslideInfo,
     2000, // MinScaleDenominator requires ≥2km bbox
+    true, // Grid scan — landslide scars are sparse polygons, center pixel often misses
   ),
 };

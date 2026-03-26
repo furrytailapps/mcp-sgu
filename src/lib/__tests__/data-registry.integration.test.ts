@@ -22,7 +22,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('returns bedrock features with rock_type', async () => {
       const { results, errors } = await queryAll(
         ['bedrock'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -38,7 +38,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('returns soil_type features', async () => {
       const { results, errors } = await queryAll(
         ['soil_type'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -53,7 +53,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('returns radon_risk data with valid radiation_value', async () => {
       const { results, errors } = await queryAll(
         ['radon_risk'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -72,7 +72,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('returns soil_depth data', async () => {
       const { results, errors } = await queryAll(
         ['soil_depth'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -90,7 +90,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('returns groundwater_vulnerability data', async () => {
       const { results, errors } = await queryAll(
         ['groundwater_vulnerability'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -108,7 +108,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('returns landslide data at known landslide zone (Trollhättan/Lilla Edet)', async () => {
       const { results, errors } = await queryAll(
         ['landslide'],
-        landslideBbox,
+        [landslideBbox],
         [landslideSweref99],
         5,
         'simplified',
@@ -127,7 +127,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('groundwater_aquifers returns features', async () => {
       const { results, errors } = await queryAll(
         ['groundwater_aquifers'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -142,7 +142,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('wells returns features with well_id', async () => {
       const { results, errors } = await queryAll(
         ['wells'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -157,7 +157,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
     it('soil_layers returns features with layer_number', async () => {
       const { results, errors } = await queryAll(
         ['soil_layers'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -181,7 +181,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
 
       const { results, errors } = await queryAll(
         ['radon_risk'],
-        stockholmBbox,
+        [stockholmBbox],
         points,
         5,
         'simplified',
@@ -201,7 +201,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
       // structure handles mixed results by querying multiple types
       const { results, errors } = await queryAll(
         ['bedrock', 'soil_type'],
-        stockholmBbox,
+        [stockholmBbox],
         [stockholmSweref99],
         5,
         'simplified',
@@ -219,7 +219,7 @@ describe('data-registry integration (real API)', { timeout: 60000 }, () => {
 
   describe('WGS84 coordinates in OGC geometry response', () => {
     it('bedrock geometry coordinates are WGS84, not SWEREF99TM', async () => {
-      const { results } = await queryAll(['bedrock'], stockholmBbox, [stockholmSweref99], 3, 'simplified');
+      const { results } = await queryAll(['bedrock'], [stockholmBbox], [stockholmSweref99], 3, 'simplified');
 
       const features = results.bedrock as Record<string, unknown>[];
       expect(features.length).toBeGreaterThan(0);

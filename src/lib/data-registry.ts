@@ -96,22 +96,35 @@ const DATA_REGISTRY: Record<DataType, RegistryEntry> = {
 // Query helpers
 // ============================================================================
 
-async function queryOgc(
+async function queryOgcPerPoint(
   entry: OgcEntry,
-  wgs84Bbox: BoundingBox,
+  perPointBboxes: BoundingBox[],
   limit: number,
   geometryDetail: GeometryDetail,
-): Promise<{ features: Record<string, unknown>[]; numberMatched?: number }> {
-  const client = entry.getClient(wgs84Bbox);
-  const result = await client.getItemsWithCount<GeoJsonFeature>(entry.collection, { bbox: wgs84Bbox, limit });
-  const features = result.features.map((f) => {
-    const transformed = entry.transform(f);
-    if (transformed.geometry) {
-      transformed.geometry = simplifyGeometry(transformed.geometry as GeoJsonGeometry, geometryDetail);
+): Promise<{ features: Record<string, unknown>[] }> {
+  // Query each point's bbox independently, deduplicate by feature ID
+  const perBboxResults = await Promise.all(
+    perPointBboxes.map(async (bbox) => {
+      const client = entry.getClient(bbox);
+      return client.getItemsWithCount<GeoJsonFeature>(entry.collection, { bbox, limit });
+    }),
+  );
+
+  const seen = new Set<string>();
+  const features: Record<string, unknown>[] = [];
+  for (const result of perBboxResults) {
+    for (const f of result.features) {
+      const id = String(f.id ?? '');
+      if (id && seen.has(id)) continue;
+      if (id) seen.add(id);
+      const transformed = entry.transform(f);
+      if (transformed.geometry) {
+        transformed.geometry = simplifyGeometry(transformed.geometry as GeoJsonGeometry, geometryDetail);
+      }
+      features.push(transformed);
     }
-    return transformed;
-  });
-  return { features, numberMatched: result.numberMatched };
+  }
+  return { features };
 }
 
 async function queryWms(entry: WmsEntry, sweref99Points: Point[]): Promise<unknown[]> {
@@ -125,7 +138,7 @@ async function queryWms(entry: WmsEntry, sweref99Points: Point[]): Promise<unkno
 
 export async function queryAll(
   requestedTypes: DataType[],
-  wgs84Bbox: BoundingBox,
+  perPointBboxes: BoundingBox[],
   sweref99Points: Point[],
   limit: number,
   geometryDetail: GeometryDetail,
@@ -137,7 +150,7 @@ export async function queryAll(
     requestedTypes.map(async (type) => {
       const entry = DATA_REGISTRY[type];
       if (entry.mode === 'ogc') {
-        return { type, data: await queryOgc(entry, wgs84Bbox, limit, geometryDetail) };
+        return { type, data: await queryOgcPerPoint(entry, perPointBboxes, limit, geometryDetail) };
       } else {
         return { type, data: await queryWms(entry, sweref99Points) };
       }

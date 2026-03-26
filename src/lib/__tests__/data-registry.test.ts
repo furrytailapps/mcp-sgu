@@ -95,7 +95,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([mockBedrockFeature]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      const { results, errors } = await queryAll(['bedrock'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      const { results, errors } = await queryAll(['bedrock'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(errors).toEqual({});
       expect(results.bedrock).toHaveLength(1);
@@ -112,7 +112,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([mockSoilFeature]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      const { results } = await queryAll(['soil_type'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      const { results } = await queryAll(['soil_type'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(results.soil_type).toHaveLength(1);
       expect(mockClient.getItemsWithCount).toHaveBeenCalledWith('grundlager', expect.any(Object));
@@ -122,7 +122,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([mockSoilFeature]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      await queryAll(['soil_type'], northernBbox, [stockholmSweref99], 50, 'simplified');
+      await queryAll(['soil_type'], [northernBbox], [stockholmSweref99], 50, 'simplified');
 
       // createOgcClient should have been called with the 250k workspace
       expect(createOgcClient).toHaveBeenCalledWith(
@@ -134,7 +134,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([mockSoilFeature]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      await queryAll(['soil_type'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      await queryAll(['soil_type'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(createOgcClient).toHaveBeenCalledWith(
         expect.objectContaining({ baseUrl: expect.stringContaining('jordarter25k-100k') }),
@@ -145,7 +145,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([mockBedrockFeature]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      const { results } = await queryAll(['bedrock'], southernBbox, [stockholmSweref99], 50, 'none');
+      const { results } = await queryAll(['bedrock'], [southernBbox], [stockholmSweref99], 50, 'none');
 
       const feature = (results.bedrock as Record<string, unknown>[])[0];
       expect(feature.geometry).toBeUndefined();
@@ -155,7 +155,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      await queryAll(['wells'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      await queryAll(['wells'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(mockClient.getItemsWithCount).toHaveBeenCalledWith('brunnar', expect.any(Object));
     });
@@ -164,7 +164,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      await queryAll(['soil_layers'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      await queryAll(['soil_layers'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(mockClient.getItemsWithCount).toHaveBeenCalledWith('lagerinformation', expect.any(Object));
     });
@@ -173,7 +173,7 @@ describe('queryAll', () => {
       const mockClient = getMockOgcClient([]);
       vi.mocked(createOgcClient).mockReturnValue(mockClient as ReturnType<typeof createOgcClient>);
 
-      await queryAll(['groundwater_aquifers'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      await queryAll(['groundwater_aquifers'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(mockClient.getItemsWithCount).toHaveBeenCalledWith('grundvattenmagasin', expect.any(Object));
     });
@@ -183,7 +183,7 @@ describe('queryAll', () => {
     it('dispatches radon_risk to sguClient.getRadonRiskAt', async () => {
       vi.mocked(sguClient.getRadonRiskAt).mockResolvedValue({ radiation_value: 2.5, risk_level: 'low' });
 
-      const { results, errors } = await queryAll(['radon_risk'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      const { results, errors } = await queryAll(['radon_risk'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(errors).toEqual({});
       expect(results.radon_risk).toHaveLength(1);
@@ -193,7 +193,7 @@ describe('queryAll', () => {
     it('dispatches soil_depth to sguClient.getSoilDepthAt', async () => {
       vi.mocked(sguClient.getSoilDepthAt).mockResolvedValue({ depth_class: '5 m' });
 
-      const { results } = await queryAll(['soil_depth'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      const { results } = await queryAll(['soil_depth'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(results.soil_depth).toHaveLength(1);
       expect(sguClient.getSoilDepthAt).toHaveBeenCalledWith(stockholmSweref99);
@@ -204,7 +204,7 @@ describe('queryAll', () => {
 
       const { results } = await queryAll(
         ['groundwater_vulnerability'],
-        southernBbox,
+        [southernBbox],
         [stockholmSweref99],
         50,
         'simplified',
@@ -216,7 +216,7 @@ describe('queryAll', () => {
     it('dispatches landslide to sguClient.getLandslideAt', async () => {
       vi.mocked(sguClient.getLandslideAt).mockResolvedValue({ description: 'Skredärr' });
 
-      const { results } = await queryAll(['landslide'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      const { results } = await queryAll(['landslide'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(results.landslide).toHaveLength(1);
     });
@@ -227,7 +227,7 @@ describe('queryAll', () => {
 
       const { results } = await queryAll(
         ['radon_risk'],
-        southernBbox,
+        [southernBbox],
         [stockholmSweref99, point2],
         50,
         'simplified',
@@ -242,7 +242,7 @@ describe('queryAll', () => {
     it('filters null WMS results (no-data)', async () => {
       vi.mocked(sguClient.getRadonRiskAt).mockResolvedValue(null);
 
-      const { results } = await queryAll(['radon_risk'], southernBbox, [stockholmSweref99], 50, 'simplified');
+      const { results } = await queryAll(['radon_risk'], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(results.radon_risk).toHaveLength(0);
     });
@@ -256,7 +256,7 @@ describe('queryAll', () => {
 
       const { results, errors } = await queryAll(
         ['bedrock', 'radon_risk'],
-        southernBbox,
+        [southernBbox],
         [stockholmSweref99],
         50,
         'simplified',
@@ -274,7 +274,7 @@ describe('queryAll', () => {
 
       const { results, errors } = await queryAll(
         ['bedrock', 'radon_risk'],
-        southernBbox,
+        [southernBbox],
         [stockholmSweref99],
         50,
         'simplified',
@@ -287,7 +287,7 @@ describe('queryAll', () => {
     });
 
     it('returns empty results and errors when no types requested', async () => {
-      const { results, errors } = await queryAll([], southernBbox, [stockholmSweref99], 50, 'simplified');
+      const { results, errors } = await queryAll([], [southernBbox], [stockholmSweref99], 50, 'simplified');
 
       expect(results).toEqual({});
       expect(errors).toEqual({});

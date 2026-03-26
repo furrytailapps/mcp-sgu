@@ -64,49 +64,43 @@ export const sguQueryHandler = withErrorHandling(async (args: SguQueryInput) => 
     return { x: s.x, y: s.y };
   });
 
-  // Compute bbox: SWEREF99TM min/max + radius → convert back to WGS84
+  // Compute per-point bboxes: each point gets its own radius-sized bbox
+  // This prevents bbox explosion when points are far apart (e.g. corridor sampling)
   const radiusM = radiusKm * 1000;
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-  for (const p of sweref99Points) {
-    if (p.x < minX) minX = p.x;
-    if (p.x > maxX) maxX = p.x;
-    if (p.y < minY) minY = p.y;
-    if (p.y > maxY) maxY = p.y;
-  }
-  const sweref99Bbox = {
-    minX: minX - radiusM,
-    minY: minY - radiusM,
-    maxX: maxX + radiusM,
-    maxY: maxY + radiusM,
-  };
-  const wgs84Bbox = sweref99BboxToWgs84(sweref99Bbox);
-  try {
-    validateWgs84Bbox(wgs84Bbox);
-  } catch {
-    throw new ValidationError(
-      `The ${radiusKm}km radius extends outside Sweden's bounds. Reduce radiusKm or pick a point further from the border.`,
-      'radiusKm',
-    );
-  }
+  const perPointBboxes: BoundingBox[] = sweref99Points.map((p) => {
+    const sweref99Bbox = {
+      minX: p.x - radiusM,
+      minY: p.y - radiusM,
+      maxX: p.x + radiusM,
+      maxY: p.y + radiusM,
+    };
+    const wgs84 = sweref99BboxToWgs84(sweref99Bbox);
+    try {
+      validateWgs84Bbox(wgs84);
+    } catch {
+      throw new ValidationError(
+        `The ${radiusKm}km radius extends outside Sweden's bounds. Reduce radiusKm or pick a point further from the border.`,
+        'radiusKm',
+      );
+    }
+    return { minX: wgs84.minLon, minY: wgs84.minLat, maxX: wgs84.maxLon, maxY: wgs84.maxLat };
+  });
 
-  // BoundingBox for OGC: WGS84 (minX=minLon, minY=minLat)
-  const ogcBbox: BoundingBox = {
-    minX: wgs84Bbox.minLon,
-    minY: wgs84Bbox.minLat,
-    maxX: wgs84Bbox.maxLon,
-    maxY: wgs84Bbox.maxLat,
-  };
+  const { results, errors } = await queryAll(requestedTypes, perPointBboxes, sweref99Points, limit, geometryDetail);
 
-  const { results, errors } = await queryAll(requestedTypes, ogcBbox, sweref99Points, limit, geometryDetail);
+  // Compute envelope bbox for response metadata
+  const envelopeBbox = sweref99BboxToWgs84({
+    minX: Math.min(...sweref99Points.map((p) => p.x)) - radiusM,
+    minY: Math.min(...sweref99Points.map((p) => p.y)) - radiusM,
+    maxX: Math.max(...sweref99Points.map((p) => p.x)) + radiusM,
+    maxY: Math.max(...sweref99Points.map((p) => p.y)) + radiusM,
+  });
 
   const response: Record<string, unknown> = {
     query: {
       points: args.points,
       radiusKm,
-      bbox: wgs84Bbox,
+      bbox: envelopeBbox,
     },
     ...results,
   };
