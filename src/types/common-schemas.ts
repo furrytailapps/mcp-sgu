@@ -15,25 +15,25 @@ export const minLatSchema = z
   .number()
   .optional()
   .describe(
-    'Minimum latitude (WGS84). Stockholm ~59.3, Gothenburg ~57.7, Malmo ~55.6. Use with minLon, maxLat, maxLon for bbox mode.',
+    'Minimum latitude (WGS84). Stockholm ~59.3, Gothenburg ~57.7, Malmo ~55.6. Can equal maxLat for point queries.',
   );
 
 export const minLonSchema = z
   .number()
   .optional()
   .describe(
-    'Minimum longitude (WGS84). Stockholm ~18.0, Gothenburg ~12.0, Malmo ~13.0. Use with minLat, maxLat, maxLon for bbox mode.',
+    'Minimum longitude (WGS84). Stockholm ~18.0, Gothenburg ~12.0, Malmo ~13.0. Can equal maxLon for point queries.',
   );
 
 export const maxLatSchema = z
   .number()
   .optional()
-  .describe('Maximum latitude (WGS84). Use with minLat, minLon, maxLon for bbox mode.');
+  .describe('Maximum latitude (WGS84). Can equal minLat for point queries.');
 
 export const maxLonSchema = z
   .number()
   .optional()
-  .describe('Maximum longitude (WGS84). Use with minLat, minLon, maxLat for bbox mode.');
+  .describe('Maximum longitude (WGS84). Can equal minLon for point queries.');
 
 // Corridor parameters (flat, WGS84)
 export const coordinatesSchema = z
@@ -46,7 +46,7 @@ export const coordinatesSchema = z
   .optional()
   .describe('Corridor centerline points [{latitude, longitude}, ...]. Requires 2+ points. Use with bufferMeters.');
 
-export const bufferMetersSchema = z.number().optional().describe('Corridor buffer in meters (1-10000, default: 500)');
+export const bufferMetersSchema = z.number().optional().describe('Buffer in meters around bbox edges or corridor centerline (bbox default: 200, corridor default: 500)');
 
 // Image parameters
 export const widthSchema = z.number().optional().describe('Image width in pixels (100-4096, default: 800)');

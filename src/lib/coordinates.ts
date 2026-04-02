@@ -58,11 +58,21 @@ export function wgs84ToSweref99(point: Wgs84Point): Sweref99Point {
   };
 }
 
-export function wgs84BboxToSweref99(bbox: Wgs84Bbox): BoundingBox {
+// Minimum buffer in meters (SWEREF99TM) added to all bbox queries.
+// Ensures point queries (equal min/max) produce a searchable area,
+// and normal bbox queries capture features near boundaries.
+const BBOX_BUFFER_M = 200;
+
+export function wgs84BboxToSweref99(bbox: Wgs84Bbox, bufferM: number = BBOX_BUFFER_M): BoundingBox {
   validateWgs84Bbox(bbox);
   const minCorner = wgs84ToSweref99({ latitude: bbox.minLat, longitude: bbox.minLon });
   const maxCorner = wgs84ToSweref99({ latitude: bbox.maxLat, longitude: bbox.maxLon });
-  return { minX: minCorner.x, minY: minCorner.y, maxX: maxCorner.x, maxY: maxCorner.y };
+  return {
+    minX: minCorner.x - bufferM,
+    minY: minCorner.y - bufferM,
+    maxX: maxCorner.x + bufferM,
+    maxY: maxCorner.y + bufferM,
+  };
 }
 
 export function wgs84CoordinatesToSweref99(coords: Wgs84Point[]): Sweref99Point[] {
@@ -80,11 +90,11 @@ export function sweref99BboxToWgs84(bbox: BoundingBox): Wgs84Bbox {
 }
 
 export function validateWgs84Bbox(bbox: Wgs84Bbox): void {
-  if (bbox.minLat >= bbox.maxLat) {
-    throw new ValidationError('minLat must be less than maxLat', 'bbox');
+  if (bbox.minLat > bbox.maxLat) {
+    throw new ValidationError('minLat must be less than or equal to maxLat', 'bbox');
   }
-  if (bbox.minLon >= bbox.maxLon) {
-    throw new ValidationError('minLon must be less than maxLon', 'bbox');
+  if (bbox.minLon > bbox.maxLon) {
+    throw new ValidationError('minLon must be less than or equal to maxLon', 'bbox');
   }
   if (!isValidWgs84Coordinate(bbox.minLat, bbox.minLon)) {
     throw new ValidationError(

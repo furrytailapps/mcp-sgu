@@ -67,12 +67,12 @@ export const getMapTool = {
   description:
     'Generate a geological map image URL for an area in Sweden. ' +
     'Provide bbox (minLat, minLon, maxLat, maxLon) OR corridor (coordinates + bufferMeters). ' +
+    'Point queries supported: set minLat=maxLat, minLon=maxLon. ' +
+    'A 200m buffer is always added around bbox edges (adjustable via bufferMeters; corridor default: 500m). ' +
     'Coordinates in WGS84 (latitude/longitude). ' +
-    'Use cases: bedrock (regional geology), soil_types (site characterization), ' +
-    'boulder_coverage (material assessment), soil_depth (depth mapping), ' +
-    'groundwater (aquifer location), groundwater_vulnerability (protection zones), ' +
-    'landslide (hazard mapping), radon_risk (radiation zones), wells (borehole locations), ' +
-    'gravel_deposits (extraction planning), rock_deposits (quarry assessment). ' +
+    'Example bbox: minLat=57.7, minLon=12.0, maxLat=57.8, maxLon=12.1. ' +
+    'Layers: bedrock, soil_types, boulder_coverage, soil_depth, groundwater, ' +
+    'groundwater_vulnerability, landslide, radon_risk, wells, gravel_deposits, rock_deposits. ' +
     'Returns map image URL and legend URL.',
   inputSchema: getMapInputSchema,
 };
@@ -122,12 +122,10 @@ function processMapInput(args: GetMapInput): BoundingBox {
     return bbox;
   }
 
-  const bbox = wgs84BboxToSweref99({
-    minLat: args.minLat!,
-    minLon: args.minLon!,
-    maxLat: args.maxLat!,
-    maxLon: args.maxLon!,
-  });
+  const bbox = wgs84BboxToSweref99(
+    { minLat: args.minLat!, minLon: args.minLon!, maxLat: args.maxLat!, maxLon: args.maxLon! },
+    args.bufferMeters,
+  );
   validateBbox(bbox);
   return bbox;
 }

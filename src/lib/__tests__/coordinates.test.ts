@@ -98,7 +98,7 @@ describe('coordinates', () => {
       expect(bbox.maxX).toBeLessThan(700000);
     });
 
-    it('should throw when minLat >= maxLat', () => {
+    it('should throw when minLat > maxLat', () => {
       expect(() =>
         wgs84BboxToSweref99({
           minLat: 59.35,
@@ -109,7 +109,7 @@ describe('coordinates', () => {
       ).toThrow(ValidationError);
     });
 
-    it('should throw when minLon >= maxLon', () => {
+    it('should throw when minLon > maxLon', () => {
       expect(() =>
         wgs84BboxToSweref99({
           minLat: 59.25,
@@ -118,6 +118,35 @@ describe('coordinates', () => {
           maxLon: 17.95,
         }),
       ).toThrow(ValidationError);
+    });
+
+    it('should accept equal coordinates (point query) and produce valid bbox via buffer', () => {
+      const bbox = wgs84BboxToSweref99({
+        minLat: 59.33,
+        minLon: 18.07,
+        maxLat: 59.33,
+        maxLon: 18.07,
+      });
+
+      // Buffer should create a valid bbox even from a single point
+      expect(bbox.minX).toBeLessThan(bbox.maxX);
+      expect(bbox.minY).toBeLessThan(bbox.maxY);
+    });
+
+    it('should apply custom buffer', () => {
+      const defaultBbox = wgs84BboxToSweref99({
+        minLat: 59.33,
+        minLon: 18.07,
+        maxLat: 59.33,
+        maxLon: 18.07,
+      });
+      const largeBbox = wgs84BboxToSweref99(
+        { minLat: 59.33, minLon: 18.07, maxLat: 59.33, maxLon: 18.07 },
+        1000,
+      );
+
+      // Larger buffer should produce a larger bbox
+      expect(largeBbox.maxX - largeBbox.minX).toBeGreaterThan(defaultBbox.maxX - defaultBbox.minX);
     });
 
     it('should throw for coordinates outside Sweden', () => {
